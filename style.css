@@ -638,6 +638,7 @@ img { max-width: 100%; }
     .dashboard-grid { grid-template-columns: 1fr; }
     .portfolio-layout { grid-template-columns: 1fr; }
     .score-bars { grid-template-columns: repeat(5, 1fr); }
+    .chat-layout { grid-template-columns: 240px 1fr; gap: 12px; }
 }
 @media (max-width: 768px) {
     .app-layout { grid-template-columns: 1fr; }
@@ -652,4 +653,7 @@ img { max-width: 100%; }
     .score-bars { grid-template-columns: repeat(3, 1fr); }
     .filter-bar { gap: 6px; }
     .filter-chip { padding: 6px 14px; font-size: .8rem; }
+    .chat-layout { display: flex; flex-direction: column; height: auto; }
+    .chat-sidebar { max-height: 280px; border-right: none; border-bottom: 1px solid var(--border); padding: 16px; }
+    .chat-main { height: 60vh; border-left: none !important; }
 }
