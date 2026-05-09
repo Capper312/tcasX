@@ -1,21 +1,46 @@
 // ===== DATA =====
 const FACULTIES = [
-  {id:'eng',name:'วิศวกรรมศาสตร์',weights:{academic:35,sports:10,volunteer:15,achievement:25,skill:15}},
-  {id:'med',name:'แพทยศาสตร์',weights:{academic:40,sports:10,volunteer:20,achievement:20,skill:10}},
-  {id:'comm',name:'นิเทศศาสตร์',weights:{academic:15,sports:10,volunteer:15,achievement:25,skill:35}},
-  {id:'biz',name:'บริหารธุรกิจ',weights:{academic:25,sports:10,volunteer:20,achievement:25,skill:20}},
-  {id:'arch',name:'สถาปัตยกรรมศาสตร์',weights:{academic:20,sports:5,volunteer:10,achievement:25,skill:40}},
-  {id:'sci',name:'วิทยาศาสตร์',weights:{academic:40,sports:10,volunteer:15,achievement:25,skill:10}},
-  {id:'law',name:'นิติศาสตร์',weights:{academic:30,sports:10,volunteer:25,achievement:20,skill:15}},
-  {id:'edu',name:'ครุศาสตร์/ศึกษาศาสตร์',weights:{academic:25,sports:15,volunteer:25,achievement:15,skill:20}},
-  {id:'arts',name:'อักษรศาสตร์/มนุษยศาสตร์',weights:{academic:25,sports:5,volunteer:20,achievement:20,skill:30}},
-  {id:'polsci',name:'รัฐศาสตร์',weights:{academic:30,sports:10,volunteer:25,achievement:25,skill:10}},
-  {id:'nurse',name:'พยาบาลศาสตร์',weights:{academic:35,sports:10,volunteer:30,achievement:15,skill:10}},
-  {id:'dent',name:'ทันตแพทยศาสตร์',weights:{academic:40,sports:5,volunteer:15,achievement:15,skill:25}},
-  {id:'pharm',name:'เภสัชศาสตร์',weights:{academic:40,sports:5,volunteer:20,achievement:20,skill:15}},
-  {id:'allied',name:'สหเวชศาสตร์',weights:{academic:35,sports:10,volunteer:20,achievement:20,skill:15}},
-  {id:'finearts',name:'ศิลปกรรมศาสตร์',weights:{academic:10,sports:5,volunteer:10,achievement:30,skill:45}},
-  {id:'agri',name:'เกษตรศาสตร์',weights:{academic:30,sports:10,volunteer:20,achievement:20,skill:20}}
+  // Health Sciences
+  {id:'med',name:'แพทยศาสตร์',weights:{academic:40,volunteer:20,achievement:20,leadership:10,internship:10}},
+  {id:'dent',name:'ทันตแพทยศาสตร์',weights:{academic:40,skill:20,volunteer:15,achievement:15,internship:10}},
+  {id:'pharm',name:'เภสัชศาสตร์',weights:{academic:40,volunteer:15,achievement:20,skill:15,online_course:10}},
+  {id:'vet',name:'สัตวแพทยศาสตร์',weights:{academic:35,volunteer:20,internship:25,achievement:10,skill:10}},
+  {id:'nurse',name:'พยาบาลศาสตร์',weights:{academic:30,volunteer:35,leadership:15,achievement:10,internship:10}},
+  {id:'allied',name:'สหเวชศาสตร์/เทคนิคการแพทย์',weights:{academic:35,volunteer:20,achievement:20,internship:15,skill:10}},
+  {id:'pubhealth',name:'สาธารณสุขศาสตร์',weights:{academic:30,volunteer:30,leadership:20,achievement:10,internship:10}},
+  {id:'optom',name:'ทัศนมาตรศาสตร์',weights:{academic:35,skill:20,volunteer:20,achievement:15,internship:10}},
+  {id:'medsci',name:'วิทยาศาสตร์การแพทย์',weights:{academic:40,achievement:25,internship:15,volunteer:10,online_course:10}},
+  
+  // Engineering & Tech
+  {id:'eng',name:'วิศวกรรมศาสตร์',weights:{academic:35,achievement:25,skill:20,leadership:10,online_course:10}},
+  {id:'it',name:'เทคโนโลยีสารสนเทศ/วิทยาการคอมพิวเตอร์',weights:{academic:25,skill:30,achievement:25,online_course:15,internship:5}},
+  {id:'sci',name:'วิทยาศาสตร์',weights:{academic:40,achievement:30,skill:10,volunteer:10,online_course:10}},
+  {id:'arch',name:'สถาปัตยกรรมศาสตร์',weights:{academic:15,skill:45,achievement:20,volunteer:10,internship:10}},
+  {id:'aviation',name:'สถาบันการบิน',weights:{academic:25,skill:20,leadership:20,sports:20,volunteer:15}},
+  
+  // Agriculture & Environment
+  {id:'agri',name:'เกษตรศาสตร์/วนศาสตร์',weights:{academic:30,volunteer:25,internship:20,achievement:15,skill:10}},
+  {id:'agroind',name:'อุตสาหกรรมเกษตร',weights:{academic:35,achievement:20,internship:20,skill:15,volunteer:10}},
+  {id:'fish',name:'ประมง',weights:{academic:30,volunteer:25,internship:20,achievement:15,sports:10}},
+  
+  // Social Sciences & Humanities
+  {id:'law',name:'นิติศาสตร์',weights:{academic:35,leadership:20,volunteer:20,achievement:15,skill:10}},
+  {id:'polsci',name:'รัฐศาสตร์',weights:{academic:30,leadership:30,volunteer:20,achievement:10,internship:10}},
+  {id:'arts',name:'อักษรศาสตร์/ศิลปศาสตร์/มนุษยศาสตร์',weights:{academic:30,skill:25,achievement:20,volunteer:15,leadership:10}},
+  {id:'comm',name:'นิเทศศาสตร์/วารสารศาสตร์',weights:{academic:15,skill:35,achievement:25,internship:15,leadership:10}},
+  {id:'biz',name:'บริหารธุรกิจ/การบัญชี',weights:{academic:30,leadership:25,achievement:20,internship:15,skill:10}},
+  {id:'econ',name:'เศรษฐศาสตร์',weights:{academic:35,achievement:20,leadership:20,online_course:15,internship:10}},
+  {id:'edu',name:'ครุศาสตร์/ศึกษาศาสตร์',weights:{academic:25,volunteer:30,leadership:20,skill:15,achievement:10}},
+  {id:'socwork',name:'สังคมสงเคราะห์ศาสตร์',weights:{academic:20,volunteer:40,leadership:20,internship:10,skill:10}},
+  {id:'psych',name:'จิตวิทยา',weights:{academic:30,volunteer:30,leadership:15,skill:15,internship:10}},
+  {id:'archaeo',name:'โบราณคดี',weights:{academic:35,volunteer:20,skill:15,achievement:15,internship:15}},
+  
+  // Arts & Design & Others
+  {id:'finearts',name:'ศิลปกรรมศาสตร์/วิจิตรศิลป์/มัณฑนศิลป์',weights:{academic:10,skill:50,achievement:25,volunteer:5,internship:10}},
+  {id:'music',name:'ดุริยางคศิลป์/ดนตรี',weights:{academic:10,skill:50,achievement:30,leadership:5,volunteer:5}},
+  {id:'sports_sci',name:'วิทยาศาสตร์การกีฬา/พลศึกษา',weights:{academic:20,sports:50,achievement:15,leadership:10,volunteer:5}},
+  {id:'tourism',name:'การท่องเที่ยวและการโรงแรม',weights:{academic:20,skill:25,volunteer:20,internship:20,leadership:15}},
+  {id:'logistics',name:'โลจิสติกส์',weights:{academic:30,leadership:20,achievement:20,internship:15,online_course:15}}
 ];
 const CAT_LABELS = {academic:'📚 วิชาการ',sports:'⚽ กีฬา/สุขภาพ',volunteer:'🤝 จิตอาสา',achievement:'🏆 ผลงาน/รางวัล',skill:'🎨 ทักษะพิเศษ',leadership:'🌟 ภาวะผู้นำ',internship:'💼 ฝึกงาน/ประสบการณ์',online_course:'💻 คอร์สออนไลน์'};
 const CAT_KEYS = Object.keys(CAT_LABELS);
@@ -135,56 +160,119 @@ function handleLogin(e) {
     toast('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
   }
 }
+
+// ===== FORGOT PASSWORD =====
+let resetEmailContext = null;
+
+function handleForgotEmail(e) {
+  e.preventDefault();
+  const email = document.getElementById('forgot-email').value.trim();
+  const users = getAllUsers();
+  const found = users.find(u => u.email === email);
+  
+  if (found) {
+    if (found.password === 'google_oauth_dummy') {
+      toast('บัญชีนี้สมัครด้วย Google กรุณาเข้าสู่ระบบด้วย Google');
+      return;
+    }
+    resetEmailContext = email;
+    document.getElementById('forgot-email-form').style.display = 'none';
+    document.getElementById('forgot-reset-form').style.display = 'block';
+    document.getElementById('forgot-desc').innerText = `พบบัญชี ${email} กรุณาตั้งรหัสผ่านใหม่`;
+    toast('พบบัญชีของคุณแล้ว!');
+  } else {
+    toast('ไม่พบบัญชีที่ใช้อีเมลนี้ในระบบ');
+  }
+}
+
+function handleResetPassword(e) {
+  e.preventDefault();
+  if (!resetEmailContext) return;
+  
+  const newPass = document.getElementById('forgot-new-password').value;
+  const confirmPass = document.getElementById('forgot-confirm-password').value;
+  
+  if (newPass !== confirmPass) {
+    toast('รหัสผ่านใหม่ทั้งสองช่องไม่ตรงกัน');
+    return;
+  }
+  
+  const users = getAllUsers();
+  const idx = users.findIndex(u => u.email === resetEmailContext);
+  
+  if (idx >= 0) {
+    users[idx].password = newPass;
+    saveAllUsers(users);
+    
+    // Reset form for next time
+    document.getElementById('forgot-email-form').style.display = 'block';
+    document.getElementById('forgot-reset-form').style.display = 'none';
+    document.getElementById('forgot-email').value = '';
+    document.getElementById('forgot-new-password').value = '';
+    document.getElementById('forgot-confirm-password').value = '';
+    document.getElementById('forgot-desc').innerText = 'กรุณากรอกอีเมลที่ใช้สมัครบัญชี TcasX ของคุณ';
+    resetEmailContext = null;
+    
+    toast('เปลี่ยนรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบใหม่ 🎉');
+    showPage('page-login');
+  }
+}
 function handleLogout() { currentUser=null; localStorage.removeItem('tcas_current'); showPage('page-landing'); toast('ออกจากระบบแล้ว'); }
 
-function handleGoogleAuth(type) {
-  // Simulate Google Auth
-  toast('กำลังเชื่อมต่อกับ Google... ⏳');
-  setTimeout(() => {
-    const email = 'google_user@gmail.com';
-    const name = 'Google User';
-    const users = getAllUsers();
-    let found = users.find(u => u.email === email);
-    
-    if (type === 'register') {
-      if (found) {
-        toast('บัญชี Google นี้ลงทะเบียนแล้ว กำลังเข้าสู่ระบบ...');
-      } else {
-        found = {
-          name: name,
-          email: email,
-          password: 'google_oauth_dummy',
-          year: 'ม.6',
-          track: 'วิทย์-คณิต',
-          faculty: 'eng',
-          bio: 'เชื่อมต่อผ่าน Google',
-          school: '',
-          isPublic: false,
-          activities: [],
-          roadmap: [],
-          friends: [],
-          friendRequests: []
-        };
-        updateUserInList(found);
-        toast('สมัครสมาชิกด้วย Google สำเร็จ! 🎉');
-      }
-    } else {
-      if (!found) {
-        toast('ไม่พบบัญชี กรุณาสมัครสมาชิกก่อน');
-        return;
-      }
-      toast('เข้าสู่ระบบด้วย Google สำเร็จ! 👋');
+function handleGoogleCallback(response) {
+  // Decode JWT Token
+  const base64Url = response.credential.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  
+  const payload = JSON.parse(jsonPayload);
+  const email = payload.email;
+  const name = payload.name;
+  const avatar = payload.picture;
+  
+  const users = getAllUsers();
+  let found = users.find(u => u.email === email);
+  
+  if (!found) {
+    // Register new user automatically
+    found = {
+      name: name,
+      email: email,
+      avatar: avatar,
+      password: 'google_oauth_dummy',
+      year: 'ม.6', // Default values
+      track: 'วิทย์-คณิต',
+      faculty: 'eng',
+      bio: 'เชื่อมต่อผ่าน Google',
+      school: '',
+      isPublic: false,
+      activities: [],
+      roadmap: [],
+      friends: [],
+      friendRequests: []
+    };
+    updateUserInList(found);
+    toast('สมัครสมาชิกด้วย Google สำเร็จ! 🎉');
+  } else {
+    // Update avatar if changed
+    if(avatar && found.avatar !== avatar) { 
+      found.avatar = avatar; 
+      updateUserInList(found); 
     }
-    
-    currentUser = found;
-    localStorage.setItem('tcas_current', currentUser.email);
-    showPage('page-dashboard');
-  }, 1000);
+    toast('เข้าสู่ระบบด้วย Google สำเร็จ! 👋');
+  }
+  
+  currentUser = found;
+  localStorage.setItem('tcas_current', currentUser.email);
+  showPage('page-dashboard');
 }
 
 // ===== DASHBOARD =====
 function renderDashboard() {
   if(!currentUser) return;
+  initCountdown();
   const fac = FACULTIES.find(f=>f.id===currentUser.faculty);
   document.getElementById('greeting').textContent = `สวัสดี, ${currentUser.name}! 👋`;
   document.getElementById('faculty-label').textContent = `คณะเป้าหมาย: ${fac?.name||'—'} | ${currentUser.year} | ${currentUser.track}`;
@@ -261,6 +349,100 @@ function drawRadar(scores) {
     ctx.beginPath(); ctx.arc(cx+Math.cos(a)*r*v,cy+Math.sin(a)*r*v,4,0,Math.PI*2);
     ctx.fillStyle='#FF6B35'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
   });
+}
+
+// ===== TCAS COUNTDOWN =====
+const TCAS_ROUNDS = [
+  {
+    id: 'port',
+    label: 'รอบ 1 — Portfolio',
+    shortLabel: 'รอบ Portfolio',
+    open:  new Date('2026-10-01T08:00:00'),
+    close: new Date('2026-11-30T23:59:00'),
+    cssClass: 'round-port',
+    emoji: '📝',
+    note: 'TCAS 70 (ปีการศึกษา 2570)'
+  },
+  {
+    id: 'quota',
+    label: 'รอบ 2 — Quota',
+    shortLabel: 'รอบโควต้า',
+    open:  new Date('2027-01-05T08:00:00'),
+    close: new Date('2027-02-28T23:59:00'),
+    cssClass: 'round-quota',
+    emoji: '🏫',
+    note: 'TCAS 70 (ปีการศึกษา 2570)'
+  },
+  {
+    id: 'admission',
+    label: 'รอบ 3 — Admission',
+    shortLabel: 'รอบ Admission',
+    open:  new Date('2027-04-01T08:00:00'),
+    close: new Date('2027-05-15T23:59:00'),
+    cssClass: 'round-admission',
+    emoji: '🎯',
+    note: 'TCAS 70 (ปีการศึกษา 2570)'
+  }
+];
+
+let _countdownTimer = null;
+
+function initCountdown() {
+  const bar = document.getElementById('tcas-countdown-bar');
+  if (!bar) return;
+  if (_countdownTimer) clearInterval(_countdownTimer);
+  renderCountdown();
+  _countdownTimer = setInterval(renderCountdown, 1000);
+}
+
+function renderCountdown() {
+  const bar = document.getElementById('tcas-countdown-bar');
+  if (!bar) { clearInterval(_countdownTimer); return; }
+  const now = new Date();
+  
+  bar.innerHTML = TCAS_ROUNDS.map(r => {
+    const isPassed = now > r.close;
+    const isOpen   = now >= r.open && now <= r.close;
+    const target   = isOpen ? r.close : (now < r.open ? r.open : null);
+    
+    let statusLabel = '';
+    let digitsHTML  = '';
+
+    if (isPassed) {
+      statusLabel = 'ปิดรับสมัครแล้ว';
+      digitsHTML  = `<div class="countdown-passed-text">✅ ผ่านไปแล้ว</div>`;
+    } else {
+      statusLabel = isOpen ? '🔴 เปิดรับสมัครอยู่ — ปิดใน' : '⏳ เปิดรับสมัครใน';
+      if (target) {
+        const diff  = Math.max(0, target - now);
+        const days  = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const mins  = Math.floor((diff % 3600000)  / 60000);
+        const secs  = Math.floor((diff % 60000)    / 1000);
+        digitsHTML = `
+          <div class="countdown-digits">
+            <div class="countdown-unit"><span class="num">${String(days).padStart(2,'0')}</span><span class="unit-label">วัน</span></div>
+            <div class="countdown-unit"><span class="num">${String(hours).padStart(2,'0')}</span><span class="unit-label">ชั่วโมง</span></div>
+            <div class="countdown-unit"><span class="num">${String(mins).padStart(2,'0')}</span><span class="unit-label">นาที</span></div>
+            <div class="countdown-unit"><span class="num">${String(secs).padStart(2,'0')}</span><span class="unit-label">วินาที</span></div>
+          </div>`;
+      }
+    }
+
+    const openStr  = r.open.toLocaleDateString('th-TH',  { day:'numeric', month:'short', year:'2-digit' });
+    const closeStr = r.close.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' });
+
+    return `
+      <div class="countdown-card ${r.cssClass} ${isPassed ? 'passed' : ''}">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="countdown-label">${r.emoji} ${r.label}</div>
+          ${r.note ? `<div style="font-size:0.65rem; opacity:0.75; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:8px;">${r.note}</div>` : ''}
+        </div>
+        <div class="countdown-name">${statusLabel}</div>
+        <div class="countdown-date">🗓 ${openStr} — ${closeStr}</div>
+        ${digitsHTML}
+      </div>`;
+  }).join('');
 }
 
 // ===== PORTFOLIO =====
@@ -346,29 +528,143 @@ function quickAdd(name, cat) {
 }
 
 // ===== RECOMMEND =====
-function renderRecommend() {
-  const el = document.getElementById('recommend-list'); if(!el||!currentUser) return;
-  const scores = calcScores();
-  const sorted = CAT_KEYS.map(k=>({key:k,score:scores[k]})).sort((a,b)=>a.score-b.score);
-  const weakest = sorted.slice(0,3);
-  let html = '';
-  weakest.forEach((w,i) => {
-    const recs = SAMPLE_ACTIVITIES.filter(a=>a.cat===w.key).slice(0,2);
-    recs.forEach(a => {
-      html += `
-      <div class="recommend-card">
-        <span class="priority">${i===0?'⚡ สำคัญมาก':i===1?'📌 แนะนำ':'💡 เสริม'}</span>
-        <h4>${a.name}</h4>
-        <p>${a.desc}</p>
-        <div class="reason">💬 หมวด "${CAT_LABELS[w.key]}" ของคุณยังอยู่ที่ ${w.score}% — กิจกรรมนี้จะช่วยเพิ่มคะแนนได้</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-primary btn-sm" onclick="addToRoadmap('${a.name}','${a.cat}','${a.date}')">+ เพิ่มลง Roadmap</button>
-          <button class="btn btn-outline btn-sm" onclick="quickAdd('${a.name}','${a.cat}')">+ เพิ่มลงพอร์ต</button>
-        </div>
-      </div>`;
-    });
+function calculateFacultyFit(userActivities, faculty) {
+  const catScores = {};
+  CAT_KEYS.forEach(k => catScores[k] = 0);
+  
+  userActivities.forEach(act => {
+    const cat = act.category || act.cat;
+    if (cat && catScores[cat] !== undefined) {
+      catScores[cat] += 10;
+    }
   });
-  el.innerHTML = html || '<div class="card"><p>ยังไม่มีข้อมูลเพียงพอ กรุณาเพิ่มกิจกรรมก่อน</p></div>';
+
+  let totalFit = 0;
+  const breakdown = [];
+  
+  CAT_KEYS.forEach(k => {
+    const weight = faculty.weights[k] || 0;
+    if (weight > 0) {
+      const maxScore = weight;
+      const actualScore = Math.min(catScores[k], maxScore);
+      totalFit += actualScore;
+      breakdown.push({
+        cat: k,
+        label: CAT_LABELS[k],
+        score: actualScore,
+        max: maxScore
+      });
+    }
+  });
+  
+  return {
+    facultyId: faculty.id,
+    facultyName: faculty.name,
+    totalFit: totalFit,
+    breakdown: breakdown.sort((a,b) => b.max - a.max)
+  };
+}
+
+function renderRecommend() {
+  const container = document.getElementById('faculty-recommend-list');
+  const recList = document.getElementById('recommend-list');
+  if (!container || !recList || !currentUser) return;
+  
+  const acts = currentUser.activities || [];
+  
+  if (acts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="grid-column: 1/-1;">
+        <span>🎯</span>
+        <p>ระบบยังไม่สามารถแนะนำคณะได้<br>โปรดเพิ่มกิจกรรมในเมนู "ตรวจสอบพอร์ต" ก่อนครับ</p>
+      </div>
+    `;
+    recList.innerHTML = '';
+    return;
+  }
+
+  // 1. Calculate fits for all faculties
+  const fits = FACULTIES.map(f => calculateFacultyFit(acts, f));
+  fits.sort((a, b) => b.totalFit - a.totalFit);
+  
+  const topMatches = fits.slice(0, 3);
+  
+  // Render top 3 faculties
+  container.innerHTML = topMatches.map((fit, idx) => {
+    const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+    const rankColor = rankColors[idx] || 'var(--primary)';
+    
+    const breakdownHTML = fit.breakdown.map(b => {
+      const pct = (b.score / b.max) * 100;
+      return `
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;color:var(--text-secondary)">
+            <span>${b.label}</span>
+            <span>${b.score}/${b.max}%</span>
+          </div>
+          <div class="progress-bg" style="height:6px;border-radius:3px;background:var(--bg-dark);overflow:hidden;">
+            <div class="progress-fill" style="width:${pct}%;height:100%;background:var(--primary);border-radius:3px;"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="card recommend-card" style="border-top: 4px solid ${rankColor}; padding:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+          <h3 style="margin:0; font-size:1.1rem; color:var(--primary-dark);">${fit.facultyName}</h3>
+          <div style="background:${rankColor}; color:#fff; font-size:0.75rem; padding:4px 8px; border-radius:12px; font-weight:bold;">
+            อันดับ ${idx+1}
+          </div>
+        </div>
+        <div style="font-size:2rem; font-weight:800; color:var(--text); margin-bottom:16px;">
+          ${fit.totalFit}<span style="font-size:1rem;color:var(--text-secondary)">/100%</span>
+        </div>
+        <div>
+          <strong style="font-size:0.85rem; color:var(--text); display:block; margin-bottom:8px;">วิเคราะห์ความเหมาะสม:</strong>
+          ${breakdownHTML}
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // 2. Recommend activities based on top match
+  const bestMatch = topMatches[0];
+  const missingCategories = bestMatch.breakdown.filter(b => b.score < b.max);
+  
+  if (missingCategories.length === 0) {
+    recList.innerHTML = `
+      <div class="card" style="text-align:center; padding:32px;">
+        <span style="font-size:3rem;display:block;margin-bottom:16px;">🌟</span>
+        <h3>พอร์ตโฟลิโอของคุณสมบูรณ์แบบมากสำหรับ ${bestMatch.facultyName}!</h3>
+        <p style="color:var(--text-secondary);">ผลงานในทุกด้านครบถ้วนตามเกณฑ์แล้ว เตรียมตัวได้เลยครับ</p>
+      </div>
+    `;
+  } else {
+    let recHTML = missingCategories.map(cat => {
+      const existingNames = acts.map(a => a.name);
+      const suggestions = SAMPLE_ACTIVITIES.filter(s => s.cat === cat.cat && !existingNames.includes(s.name));
+      const suggestion = suggestions.length > 0 ? suggestions[0] : null;
+      
+      return `
+        <div class="card" style="display:flex; align-items:center; gap:16px; margin-bottom:12px; padding:16px 20px;">
+          <div style="font-size:2rem;">${cat.label.split(' ')[0]}</div>
+          <div style="flex:1;">
+            <h4 style="margin:0 0 4px 0; color:var(--primary-dark);">ควรเพิ่มผลงานด้าน ${cat.label.substring(2)}</h4>
+            <p style="margin:0; font-size:0.85rem; color:var(--text-secondary);">คณะนี้ให้ความสำคัญถึง ${cat.max}% แต่คุณมีผลงานเพียง ${cat.score}%</p>
+            ${suggestion ? `<div style="margin-top:8px; padding:8px 12px; background:var(--bg); border-radius:6px; font-size:0.8rem; border:1px dashed var(--border);">
+              <strong>💡 ไอเดียกิจกรรม:</strong> ${suggestion.name} (${suggestion.level}) - ${suggestion.desc}
+            </div>` : ''}
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="showPage('page-explore')">ค้นหาค่าย</button>
+            ${suggestion ? `<button class="btn btn-primary btn-sm" onclick="addToRoadmap('${suggestion.name}','${suggestion.cat}','${suggestion.date}')">+ Roadmap</button>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+    recList.innerHTML = recHTML;
+  }
 }
 
 // ===== ROADMAP =====
