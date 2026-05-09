@@ -7,9 +7,17 @@ const FACULTIES = [
   {id:'arch',name:'สถาปัตยกรรมศาสตร์',weights:{academic:20,sports:5,volunteer:10,achievement:25,skill:40}},
   {id:'sci',name:'วิทยาศาสตร์',weights:{academic:40,sports:10,volunteer:15,achievement:25,skill:10}},
   {id:'law',name:'นิติศาสตร์',weights:{academic:30,sports:10,volunteer:25,achievement:20,skill:15}},
-  {id:'edu',name:'ครุศาสตร์/ศึกษาศาสตร์',weights:{academic:25,sports:15,volunteer:25,achievement:15,skill:20}}
+  {id:'edu',name:'ครุศาสตร์/ศึกษาศาสตร์',weights:{academic:25,sports:15,volunteer:25,achievement:15,skill:20}},
+  {id:'arts',name:'อักษรศาสตร์/มนุษยศาสตร์',weights:{academic:25,sports:5,volunteer:20,achievement:20,skill:30}},
+  {id:'polsci',name:'รัฐศาสตร์',weights:{academic:30,sports:10,volunteer:25,achievement:25,skill:10}},
+  {id:'nurse',name:'พยาบาลศาสตร์',weights:{academic:35,sports:10,volunteer:30,achievement:15,skill:10}},
+  {id:'dent',name:'ทันตแพทยศาสตร์',weights:{academic:40,sports:5,volunteer:15,achievement:15,skill:25}},
+  {id:'pharm',name:'เภสัชศาสตร์',weights:{academic:40,sports:5,volunteer:20,achievement:20,skill:15}},
+  {id:'allied',name:'สหเวชศาสตร์',weights:{academic:35,sports:10,volunteer:20,achievement:20,skill:15}},
+  {id:'finearts',name:'ศิลปกรรมศาสตร์',weights:{academic:10,sports:5,volunteer:10,achievement:30,skill:45}},
+  {id:'agri',name:'เกษตรศาสตร์',weights:{academic:30,sports:10,volunteer:20,achievement:20,skill:20}}
 ];
-const CAT_LABELS = {academic:'📚 วิชาการ',sports:'⚽ กีฬา/สุขภาพ',volunteer:'🤝 จิตอาสา',achievement:'🏆 ผลงาน/รางวัล',skill:'🎨 ทักษะพิเศษ'};
+const CAT_LABELS = {academic:'📚 วิชาการ',sports:'⚽ กีฬา/สุขภาพ',volunteer:'🤝 จิตอาสา',achievement:'🏆 ผลงาน/รางวัล',skill:'🎨 ทักษะพิเศษ',leadership:'🌟 ภาวะผู้นำ',internship:'💼 ฝึกงาน/ประสบการณ์',online_course:'💻 คอร์สออนไลน์'};
 const CAT_KEYS = Object.keys(CAT_LABELS);
 const SAMPLE_ACTIVITIES = [
   {name:'ค่ายโอลิมปิกวิชาการ สอวน.',cat:'academic',desc:'ค่ายส่งเสริมวิชาการระดับประเทศ เตรียมพร้อมสำหรับการแข่งขันโอลิมปิกวิชาการ',date:'15 มิ.ย. 2569',level:'ประเทศ'},
@@ -26,7 +34,13 @@ const SAMPLE_ACTIVITIES = [
   {name:'ค่ายศิลปะสร้างสรรค์',cat:'skill',desc:'เรียนรู้เทคนิคศิลปะจากศิลปินมืออาชีพ 3 วัน 2 คืน',date:'10 มิ.ย. 2569',level:'ประเทศ'},
   {name:'Workshop ถ่ายภาพ',cat:'skill',desc:'เรียนรู้การถ่ายภาพเชิงสร้างสรรค์และการตัดต่อ',date:'8 ก.ค. 2569',level:'จังหวัด'},
   {name:'เรียนรู้ Coding & AI',cat:'skill',desc:'หลักสูตร Python & AI เบื้องต้นสำหรับม.ปลาย',date:'ตลอดปี',level:'ออนไลน์'},
-  {name:'ค่ายดนตรีเยาวชน',cat:'skill',desc:'พัฒนาทักษะดนตรีกับนักดนตรีมืออาชีพ',date:'18 ก.ค. 2569',level:'ภาค'}
+  {name:'ค่ายดนตรีเยาวชน',cat:'skill',desc:'พัฒนาทักษะดนตรีกับนักดนตรีมืออาชีพ',date:'18 ก.ค. 2569',level:'ภาค'},
+  {name:'ประธานสภานักเรียน',cat:'leadership',desc:'เป็นผู้นำขับเคลื่อนนโยบายโรงเรียน จัดสรรงบประมาณและกิจกรรมนักเรียน',date:'ตลอดปี',level:'โรงเรียน'},
+  {name:'หัวหน้าชมรมวิชาการ',cat:'leadership',desc:'บริหารจัดการชมรมและจัดกิจกรรมติวหนังสือให้น้องๆ',date:'ตลอดปี',level:'โรงเรียน'},
+  {name:'ฝึกงานคลินิกสัตว์',cat:'internship',desc:'เรียนรู้การดูแลสัตว์ป่วยและการทำงานของผู้ช่วยสัตวแพทย์',date:'ต.ค. 2569',level:'จังหวัด'},
+  {name:'ฝึกงานบริษัท Tech',cat:'internship',desc:'ดูงานและช่วยโปรเจกต์ด้าน Data Science ช่วงปิดเทอม',date:'เม.ย. 2569',level:'ประเทศ'},
+  {name:'CS50x Harvard',cat:'online_course',desc:'คอร์สวิทยาการคอมพิวเตอร์ออนไลน์ชื่อดัง ได้รับประกาศนียบัตร',date:'ส.ค. 2569',level:'ออนไลน์'},
+  {name:'CHULA MOOC ภาษาอังกฤษ',cat:'online_course',desc:'เรียนทักษะภาษาอังกฤษเพื่อการสื่อสารในชีวิตประจำวัน',date:'ม.ค. 2569',level:'ออนไลน์'}
 ];
 
 let currentUser = null;
@@ -41,24 +55,10 @@ function updateUserInList(user) {
   saveAllUsers(users);
 }
 
-// ===== SEED DEMO USERS =====
-function seedDemoUsers() {
-  if(localStorage.getItem('tcas_seeded')) return;
-  const demoUsers = [
-    {name:'ณัฐชา วิทยาเลิศ',email:'natcha@demo.com',password:'123456',year:'ม.6',track:'วิทย์-คณิต',faculty:'med',school:'โรงเรียนเตรียมอุดมศึกษา',bio:'อยากเป็นหมอเพื่อช่วยเหลือคนในชนบท ชอบชีววิทยาและเคมี 🔬',isPublic:true,activities:[{name:'ค่ายโอลิมปิกวิชาการ สอวน.',category:'academic',level:'3',desc:'ค่ายชีววิทยา'},{name:'จิตอาสาสอนน้อง',category:'volunteer',level:'1',desc:'สอนวิทยาศาสตร์เด็กประถม'},{name:'แข่งขัน Science Project',category:'achievement',level:'3',desc:'โครงงานชีววิทยา'}],roadmap:[]},
-    {name:'ภูมิ สถาปัตย์',email:'poom@demo.com',password:'123456',year:'ม.5',track:'วิทย์-คณิต',faculty:'arch',school:'โรงเรียนสาธิต มศว',bio:'ฝันอยากเป็นสถาปนิก ชอบวาดรูปและออกแบบ 🏗️',isPublic:true,activities:[{name:'ค่ายศิลปะสร้างสรรค์',category:'skill',level:'3',desc:'เรียนออกแบบ'},{name:'ประกวดวาดภาพ',category:'achievement',level:'2',desc:'ได้รางวัลชมเชย'},{name:'Workshop ถ่ายภาพ',category:'skill',level:'2',desc:'ถ่ายภาพสถาปัตยกรรม'}],roadmap:[]},
-    {name:'มินตรา ธุรกิจ',email:'mintra@demo.com',password:'123456',year:'ม.6',track:'ศิลป์-คำนวณ',faculty:'biz',school:'โรงเรียนสวนกุหลาบวิทยาลัย',bio:'สนใจ Startup และการตลาดดิจิทัล อยากสร้างแบรนด์ของตัวเอง 💼',isPublic:true,activities:[{name:'Hackathon ระดับม.ปลาย',category:'achievement',level:'3',desc:'พัฒนา App ธุรกิจ'},{name:'เรียนรู้ Coding & AI',category:'skill',level:'3',desc:'เรียน Python'},{name:'ค่ายอาสาพัฒนาชนบท',category:'volunteer',level:'2',desc:'ลงพื้นที่ช่วยชุมชน'}],roadmap:[]},
-    {name:'ปริญ นิเทศ',email:'prin@demo.com',password:'123456',year:'ม.6',track:'ศิลป์-ภาษา',faculty:'comm',school:'โรงเรียนบดินทรเดชา',bio:'อยากเป็นผู้กำกับหนัง ชอบเล่าเรื่องผ่านภาพและเสียง 🎬',isPublic:true,activities:[{name:'Workshop ถ่ายภาพ',category:'skill',level:'2',desc:'ถ่ายภาพสารคดี'},{name:'ประกวดสุนทรพจน์',category:'achievement',level:'3',desc:'พูดภาษาอังกฤษ'},{name:'ค่ายดนตรีเยาวชน',category:'skill',level:'2',desc:'ทำเพลงประกอบหนังสั้น'}],roadmap:[]},
-    {name:'ธนกฤต วิศวะ',email:'thanakrit@demo.com',password:'123456',year:'ม.5',track:'วิทย์-คณิต',faculty:'eng',school:'โรงเรียนมหิดลวิทยานุสรณ์',bio:'สนใจ Robotics และ AI อยากสร้างหุ่นยนต์ช่วยเหลือผู้สูงอายุ 🤖',isPublic:true,activities:[{name:'Math Challenge',category:'academic',level:'3',desc:'แข่งคณิตศาสตร์'},{name:'Hackathon ระดับม.ปลาย',category:'achievement',level:'3',desc:'สร้าง Robot'},{name:'เรียนรู้ Coding & AI',category:'skill',level:'3',desc:'เรียน Machine Learning'}],roadmap:[]},
-    {name:'แพรวา กฎหมาย',email:'praewa@demo.com',password:'123456',year:'ม.6',track:'ศิลป์-สังคม',faculty:'law',school:'โรงเรียนเซนต์โยเซฟคอนเวนต์',bio:'อยากเป็นทนายเพื่อสิทธิมนุษยชน สนใจกฎหมายระหว่างประเทศ ⚖️',isPublic:true,activities:[{name:'ประกวดสุนทรพจน์',category:'achievement',level:'3',desc:'หัวข้อสิทธิมนุษยชน'},{name:'จิตอาสาสอนน้อง',category:'volunteer',level:'1',desc:'สอนสังคมศึกษา'},{name:'ปลูกป่าชายเลน',category:'volunteer',level:'2',desc:'อนุรักษ์สิ่งแวดล้อม'}],roadmap:[{name:'ค่ายอาสาพัฒนาชนบท',cat:'volunteer',date:'1 ก.ค. 2569',done:true}]}
-  ];
-  saveAllUsers(demoUsers);
-  localStorage.setItem('tcas_seeded', '1');
-}
+// ===== DEMO USERS REMOVED =====
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  seedDemoUsers();
   // populate faculty selects
   document.querySelectorAll('#reg-faculty, #edit-faculty').forEach(sel => {
     FACULTIES.forEach(f => { const o=document.createElement('option'); o.value=f.id; o.textContent=f.name; sel.appendChild(o); });
@@ -87,6 +87,7 @@ function showPage(id) {
   if(id==='page-roadmap') renderRoadmap();
   if(id==='page-profile') renderProfile();
   if(id==='page-community') renderCommunity();
+  if(id==='page-chat') renderChatPage();
   if(id==='page-tcasinfo') initTcasInfo();
   // close mobile menu
   document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('open'));
@@ -110,7 +111,9 @@ function handleRegister(e) {
     school: '',
     isPublic: false,
     activities: [],
-    roadmap: []
+    roadmap: [],
+    friends: [],
+    friendRequests: []
   };
   updateUserInList(currentUser);
   localStorage.setItem('tcas_current', currentUser.email);
@@ -165,7 +168,7 @@ function calcScores() {
     scores[a.category] = Math.min(100, (scores[a.category]||0) + pts*20);
   });
   // weight by faculty
-  if(fac) { CAT_KEYS.forEach(k => { scores[k] = Math.min(100, Math.round(scores[k] * (fac.weights[k]/25))); }); }
+  if(fac) { CAT_KEYS.forEach(k => { scores[k] = Math.min(100, Math.round(scores[k] * ((fac.weights[k]||0)/25))); }); }
   return scores;
 }
 
@@ -473,7 +476,7 @@ function calcScoresFor(user) {
     const pts = parseInt(a.level)||1;
     scores[a.category] = Math.min(100, (scores[a.category]||0) + pts*20);
   });
-  if(fac) { CAT_KEYS.forEach(k => { scores[k] = Math.min(100, Math.round(scores[k] * (fac.weights[k]/25))); }); }
+  if(fac) { CAT_KEYS.forEach(k => { scores[k] = Math.min(100, Math.round(scores[k] * ((fac.weights[k]||0)/25))); }); }
   return scores;
 }
 function openProfileModal(idx) {
@@ -504,6 +507,22 @@ function openProfileModal(idx) {
           <div class="act-detail"><strong>${a.name}</strong><small>${CAT_LABELS[a.category] || ''}</small></div>
         </div>`).join('')}
     </div>`;
+
+  // Friend actions logic
+  initUserSocials(currentUser);
+  initUserSocials(u);
+  const actionsEl = document.getElementById('modal-actions');
+  
+  if (currentUser.friends.includes(u.email)) {
+    actionsEl.innerHTML = `<button class="btn btn-primary btn-full" onclick="startChat('${u.email}')">💬 ส่งข้อความแชท</button>`;
+  } else if (u.friendRequests.includes(currentUser.email)) {
+    actionsEl.innerHTML = `<button class="btn btn-outline btn-full" disabled>⏳ รอการตอบรับ...</button>`;
+  } else if (currentUser.friendRequests.includes(u.email)) {
+    actionsEl.innerHTML = `<button class="btn btn-primary btn-full" onclick="acceptFriendRequest('${u.email}')">✔️ ตอบรับคำขอเป็นเพื่อน</button>`;
+  } else {
+    actionsEl.innerHTML = `<button class="btn btn-outline btn-full" onclick="sendFriendRequest('${u.email}')">➕ เพิ่มเพื่อน</button>`;
+  }
+
   document.getElementById('profile-modal').style.display = 'flex';
 }
 function closeModal(e) { if(e.target.classList.contains('modal-overlay')) e.target.style.display = 'none'; }
@@ -579,6 +598,38 @@ const TCAS_DATA = {
   edu: {
     quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครู)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT5','40%'],['A-Level ภาษาไทย','20%'],['A-Level อังกฤษ','20%']],note:'TPAT5 วัดความถนัดทางวิชาชีพครู รวมทัศนคติและจิตวิทยาการศึกษา'},
     admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครู)',type:'tpat'},{name:'A-Level ตามสาขา',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT5','30%'],['A-Level ตามสาขา','50%']],note:'สาขาวิชาที่สอน เช่น ครูคณิต ใช้ A-Level คณิต, ครูอังกฤษ ใช้ A-Level อังกฤษ'}
+  },
+  arts: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level อังกฤษ','25%'],['A-Level สังคม','20%']],note:'เน้นภาษาที่ 3 ด้วยสำหรับบางสาขา'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ภาษาไทย','30%'],['A-Level สังคม','20%'],['A-Level อังกฤษ','30%']],note:'คะแนนภาษาอังกฤษมีความสำคัญมาก'}
+  },
+  polsci: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','20%'],['A-Level อังกฤษ','20%'],['A-Level สังคม','30%']],note:'บางที่มีสอบข้อเขียนความรู้ทั่วไปทางการเมือง'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','25%'],['A-Level ภาษาไทย','25%'],['A-Level สังคม','30%'],['A-Level อังกฤษ','20%']],note:'การอ่านข่าวสารบ้านเมืองช่วยในการสอบสัมภาษณ์ได้'}
+  },
+  nurse: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','20%'],['A-Level อังกฤษ','30%']],note:'เน้นความรับผิดชอบและจิตอาสาในการพยาบาล'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','20%'],['A-Level วิทย์อื่นๆ','10%'],['A-Level อังกฤษ','20%']],note:'ต้องเป็นสายวิทย์-คณิตเท่านั้น'}
+  },
+  dent: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level วิทย์รวม',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level วิทย์','40%'],['TGAT','30%']],note:'คล้ายแพทยศาสตร์ แต่จะเน้นทักษะหัตถการเพิ่มเติม'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level 7 วิชา','70%']],note:'ใช้ระบบ กสพท'}
+  },
+  pharm: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level วิทย์','40%'],['TGAT','30%']],note:'เคมีคือวิชาที่สำคัญที่สุด'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level 7 วิชา','70%']],note:'ใช้ระบบ กสพท'}
+  },
+  allied: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%'],['A-Level อังกฤษ','20%']],note:'เหมาะสำหรับผู้ที่สนใจการแพทย์แต่ไม่ได้เรียนแพทย์โดยตรง'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level วิทย์ 3 วิชา','60%'],['A-Level คณิต 1','20%']],note:'สายวิทย์-คณิตเท่านั้น'}
+  },
+  finearts: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT2 (ศิลปกรรม)',type:'tpat'}],criteria:[['TGAT','30%'],['TPAT2','70%']],note:'ผลงาน Portfolio (รูปวาด/ผลงานศิลปะ) มีน้ำหนักมากที่สุดในทุกรอบ'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT2 (ศิลปกรรม)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT2','60%'],['A-Level ภาษาไทย','20%']],note:'ทักษะทางศิลปะเป็นตัวชี้วัดหลักในการสอบเข้า'}
+  },
+  agri: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิทย์)',type:'tpat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT3','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%']],note:'มีความมุ่งมั่นในการพัฒนาการเกษตร'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%'],['A-Level คณิต 1','20%']],note:'สายวิทย์-คณิตเท่านั้น'}
   }
 };
 const ALL_TRACKS = ['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'];
@@ -622,4 +673,206 @@ function renderTcasInfo() {
       <div class="tcas-note">💡 ${data.note}</div>
     </div>`;
   }).join('');
+}
+
+// ===== FRIENDS & CHAT SYSTEM =====
+function initUserSocials(user) {
+  if(!user.friends) user.friends = [];
+  if(!user.friendRequests) user.friendRequests = [];
+}
+
+function sendFriendRequest(targetEmail) {
+  const users = getAllUsers();
+  const targetUser = users.find(u => u.email === targetEmail);
+  if(!targetUser) return;
+  initUserSocials(targetUser);
+  if(!targetUser.friendRequests.includes(currentUser.email)) {
+    targetUser.friendRequests.push(currentUser.email);
+    updateUserInList(targetUser);
+    toast('ส่งคำขอเป็นเพื่อนแล้ว 📨');
+    // Refresh modal if open
+    const modalContent = document.getElementById('modal-content').innerHTML;
+    if(modalContent) openProfileModal(window._communityFiltered.findIndex(u=>u.email===targetEmail));
+  }
+}
+
+function acceptFriendRequest(targetEmail) {
+  const users = getAllUsers();
+  const targetUser = users.find(u => u.email === targetEmail);
+  if(!targetUser) return;
+  
+  initUserSocials(currentUser);
+  initUserSocials(targetUser);
+  
+  // Remove request
+  currentUser.friendRequests = currentUser.friendRequests.filter(e => e !== targetEmail);
+  
+  // Add to friends
+  if(!currentUser.friends.includes(targetEmail)) currentUser.friends.push(targetEmail);
+  if(!targetUser.friends.includes(currentUser.email)) targetUser.friends.push(currentUser.email);
+  
+  updateUserInList(currentUser);
+  updateUserInList(targetUser);
+  toast('เพิ่มเพื่อนสำเร็จแล้ว! 🎉');
+  
+  // Refresh UI
+  if(document.getElementById('page-chat').classList.contains('active')) {
+    renderChatPage();
+  } else if(document.getElementById('profile-modal').style.display === 'flex') {
+    openProfileModal(window._communityFiltered.findIndex(u=>u.email===targetEmail));
+  }
+}
+
+let activeChatFriend = null;
+
+function startChat(targetEmail) {
+  document.getElementById('profile-modal').style.display = 'none';
+  showPage('page-chat');
+  selectFriendToChat(targetEmail);
+}
+
+function renderChatPage() {
+  initUserSocials(currentUser);
+  const users = getAllUsers();
+  
+  // Render Friends
+  const friendsList = document.getElementById('friends-list');
+  if(currentUser.friends.length === 0) {
+    friendsList.innerHTML = '<p style="color:var(--text-secondary);font-size:.85rem;padding:10px;">ยังไม่มีเพื่อน</p>';
+  } else {
+    friendsList.innerHTML = currentUser.friends.map(email => {
+      const f = users.find(u=>u.email===email);
+      if(!f) return '';
+      const isAct = activeChatFriend === email ? 'active' : '';
+      return `
+        <div class="friend-item ${isAct}" onclick="selectFriendToChat('${f.email}')">
+          <div class="friend-avatar" style="${f.avatar ? `background-image:url(${f.avatar})` : ''}">${f.avatar ? '' : f.name.charAt(0)}</div>
+          <div class="friend-info">
+            <div class="friend-name">${f.name}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+  
+  // Render Friend Requests
+  const requestsList = document.getElementById('friend-requests-list');
+  if(currentUser.friendRequests.length === 0) {
+    requestsList.innerHTML = '<p style="color:var(--text-secondary);font-size:.85rem;padding:10px;">ไม่มีคำขอใหม่</p>';
+  } else {
+    requestsList.innerHTML = currentUser.friendRequests.map(email => {
+      const f = users.find(u=>u.email===email);
+      if(!f) return '';
+      return `
+        <div class="friend-item" style="cursor:default;">
+          <div class="friend-avatar" style="${f.avatar ? `background-image:url(${f.avatar})` : ''}">${f.avatar ? '' : f.name.charAt(0)}</div>
+          <div class="friend-info">
+            <div class="friend-name">${f.name}</div>
+            <div class="friend-request-actions">
+              <button class="btn btn-primary btn-sm" style="padding:4px 8px;font-size:.7rem;" onclick="acceptFriendRequest('${f.email}')">ยอมรับ</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+}
+
+function getChatId(email1, email2) {
+  return [email1, email2].sort().join('_');
+}
+
+function getAllChats() {
+  return JSON.parse(localStorage.getItem('tcas_chats') || '{}');
+}
+
+function selectFriendToChat(email) {
+  activeChatFriend = email;
+  renderChatPage(); // Update active state in sidebar
+  
+  const users = getAllUsers();
+  const f = users.find(u=>u.email===email);
+  if(!f) return;
+  
+  document.getElementById('chat-header').innerHTML = `
+    <div class="friend-avatar" style="${f.avatar ? `background-image:url(${f.avatar})` : ''}">${f.avatar ? '' : f.name.charAt(0)}</div>
+    <div><strong>${f.name}</strong><br><small style="color:var(--text-secondary)">${FACULTIES.find(fac=>fac.id===f.faculty)?.name || ''}</small></div>
+  `;
+  
+  document.getElementById('chat-input-area').style.display = 'flex';
+  renderChatMessages();
+}
+
+function renderChatMessages() {
+  if(!activeChatFriend) return;
+  const chatId = getChatId(currentUser.email, activeChatFriend);
+  const chats = getAllChats();
+  const msgs = chats[chatId] || [];
+  
+  const msgContainer = document.getElementById('chat-messages');
+  if(msgs.length === 0) {
+    msgContainer.innerHTML = `<div class="chat-empty-state">เริ่มการสนทนากับเพื่อนของคุณเลย! 👋</div>`;
+  } else {
+    msgContainer.innerHTML = msgs.map(m => {
+      const isMe = m.sender === currentUser.email;
+      const time = new Date(m.time).toLocaleTimeString('th-TH', {hour:'2-digit', minute:'2-digit'});
+      return `
+        <div class="chat-bubble ${isMe ? 'sent' : 'received'}">
+          ${m.text}
+          <div class="chat-time">${time}</div>
+        </div>
+      `;
+    }).join('');
+  }
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if(!text || !activeChatFriend) return;
+  
+  const chatId = getChatId(currentUser.email, activeChatFriend);
+  const chats = getAllChats();
+  if(!chats[chatId]) chats[chatId] = [];
+  
+  chats[chatId].push({
+    sender: currentUser.email,
+    text: text,
+    time: new Date().getTime()
+  });
+  
+  localStorage.setItem('tcas_chats', JSON.stringify(chats));
+  input.value = '';
+  renderChatMessages();
+}
+
+function searchAndAddFriend() {
+  const input = document.getElementById('friend-search-input');
+  if(!input || !currentUser) return;
+  const targetStr = input.value.trim().toLowerCase();
+  if(!targetStr) { toast('กรุณากรอกชื่อหรืออีเมลเพื่อน'); return; }
+  if(targetStr === currentUser.email.toLowerCase() || targetStr === currentUser.name.toLowerCase()) {
+    toast('ไม่สามารถเพิ่มตัวเองได้'); return;
+  }
+  const users = getAllUsers();
+  const targetUser = users.find(u => u.email.toLowerCase() === targetStr || u.name.toLowerCase() === targetStr);
+  if(!targetUser) {
+    toast('ไม่พบผู้ใช้งานชื่อหรืออีเมลนี้ 😢'); return;
+  }
+  
+  initUserSocials(currentUser);
+  initUserSocials(targetUser);
+  if(currentUser.friends.includes(targetUser.email)) {
+    toast('เป็นเพื่อนกันอยู่แล้ว ✅'); return;
+  }
+  if(targetUser.friendRequests.includes(currentUser.email)) {
+    toast('ส่งคำขอไปแล้ว รอการตอบรับ... ⏳'); return;
+  }
+  if(currentUser.friendRequests.includes(targetUser.email)) {
+    acceptFriendRequest(targetUser.email);
+    input.value = '';
+    return;
+  }
+  
+  sendFriendRequest(targetUser.email);
+  input.value = '';
 }
