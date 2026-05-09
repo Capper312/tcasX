@@ -7,8 +7,16 @@
     <meta name="description" content="ระบบช่วยวางแผนและจัดการพอร์ตโฟลิโอ TCAS รอบ 1 อย่างครบวงจร">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+    <div id="g_id_onload"
+         data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
+         data-context="use"
+         data-ux_mode="popup"
+         data-callback="handleGoogleCallback"
+         data-auto_prompt="false">
+    </div>
     <!-- ============ LANDING PAGE ============ -->
     <section id="page-landing" class="page active">
         <div class="landing-bg">
@@ -103,15 +111,9 @@
                     <button type="submit" class="btn btn-primary btn-full">สมัครสมาชิก</button>
                 </form>
                 <div class="auth-divider"><span>หรือ</span></div>
-                <button class="btn btn-outline btn-full btn-google" onclick="handleGoogleAuth('register')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    สมัครสมาชิกด้วย Google
-                </button>
+                <div style="display:flex; justify-content:center; margin-bottom: 16px; width: 100%;">
+                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signup_with" data-size="large" data-logo_alignment="center" data-width="380"></div>
+                </div>
                 <p class="auth-switch">มีบัญชีอยู่แล้ว? <a href="#" onclick="showPage('page-login')">เข้าสู่ระบบ</a></p>
             </div>
         </div>
@@ -136,19 +138,52 @@
                         <label>รหัสผ่าน</label>
                         <input type="password" id="login-password" placeholder="กรอกรหัสผ่าน" required>
                     </div>
+                    <div style="text-align: right; margin-top: -10px; margin-bottom: 16px;">
+                        <a href="#" onclick="showPage('page-forgot')" style="font-size: 0.9rem; color: var(--primary); font-weight: 500;">ลืมรหัสผ่าน?</a>
+                    </div>
                     <button type="submit" class="btn btn-primary btn-full">เข้าสู่ระบบ</button>
                 </form>
                 <div class="auth-divider"><span>หรือ</span></div>
-                <button class="btn btn-outline btn-full btn-google" onclick="handleGoogleAuth('login')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    เข้าสู่ระบบด้วย Google
-                </button>
+                <div style="display:flex; justify-content:center; margin-bottom: 16px; width: 100%;">
+                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signin_with" data-size="large" data-logo_alignment="center" data-width="380"></div>
+                </div>
                 <p class="auth-switch">ยังไม่มีบัญชี? <a href="#" onclick="showPage('page-register')">สมัครสมาชิก</a></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FORGOT PASSWORD PAGE ============ -->
+    <section id="page-forgot" class="page">
+        <div class="auth-container">
+            <button class="back-btn" onclick="showPage('page-login')">← กลับไปหน้าเข้าสู่ระบบ</button>
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo-sm">🔑</div>
+                    <h2>กู้คืนรหัสผ่าน</h2>
+                    <p id="forgot-desc">กรุณากรอกอีเมลที่ใช้สมัครบัญชี TcasX ของคุณ</p>
+                </div>
+                
+                <!-- ขั้นตอนที่ 1: กรอกอีเมล -->
+                <form id="forgot-email-form" onsubmit="handleForgotEmail(event)">
+                    <div class="form-group">
+                        <label>อีเมล</label>
+                        <input type="email" id="forgot-email" placeholder="example@email.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">ค้นหาบัญชี</button>
+                </form>
+
+                <!-- ขั้นตอนที่ 2: ตั้งรหัสผ่านใหม่ (ซ่อนไว้ก่อน) -->
+                <form id="forgot-reset-form" onsubmit="handleResetPassword(event)" style="display: none;">
+                    <div class="form-group">
+                        <label>รหัสผ่านใหม่</label>
+                        <input type="password" id="forgot-new-password" placeholder="ตั้งรหัสผ่านใหม่" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>ยืนยันรหัสผ่านใหม่</label>
+                        <input type="password" id="forgot-confirm-password" placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง" required minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">บันทึกรหัสผ่านใหม่</button>
+                </form>
             </div>
         </div>
     </section>
@@ -179,6 +214,9 @@
                     </div>
                     <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
                 </header>
+                <!-- TCAS Countdown -->
+                <div class="tcas-countdown-bar" id="tcas-countdown-bar"></div>
+
                 <div class="dashboard-grid">
                     <div class="card score-card">
                         <h3>Portfolio Score</h3>
@@ -361,12 +399,17 @@
             </aside>
             <main class="main-content">
                 <header class="top-bar">
-                    <h1>💡 กิจกรรมแนะนำสำหรับคุณ</h1>
+                    <h1>💡 คณะและกิจกรรมแนะนำ</h1>
                     <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
                 </header>
                 <div class="recommend-intro card">
-                    <p>🤖 ระบบวิเคราะห์จากคณะเป้าหมายและกิจกรรมที่คุณมี แล้วแนะนำสิ่งที่ควรทำเพิ่มเพื่อให้พอร์ตสมบูรณ์</p>
+                    <p>🤖 ระบบวิเคราะห์ข้อมูลจากพอร์ตโฟลิโอของคุณ เพื่อค้นหาคณะที่เหมาะสมที่สุด และแนะนำกิจกรรมที่ควรทำเพิ่ม</p>
                 </div>
+                
+                <h3 style="margin-top:20px; margin-bottom:12px;">🎓 คณะที่เหมาะกับผลงานของคุณ</h3>
+                <div id="faculty-recommend-list" class="explore-grid"></div>
+
+                <h3 style="margin-top:28px; margin-bottom:12px;">🌟 กิจกรรมแนะนำ (เพื่อเข้าคณะเป้าหมาย)</h3>
                 <div id="recommend-list" class="recommend-list"></div>
             </main>
         </div>
