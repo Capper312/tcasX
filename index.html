@@ -615,9 +615,10 @@
                 </header>
                 <div class="chat-layout card" style="padding:0; overflow:hidden;">
                     <div class="chat-sidebar">
-                        <div style="margin-bottom: 16px;">
-                            <input type="text" id="friend-search-input" placeholder="ค้นหาอีเมลเพื่อน..." style="width:100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: .9rem;">
-                            <button class="btn btn-primary btn-sm btn-full" style="margin-top: 8px;" onclick="searchAndAddFriend()">➕ ค้นหาและเพิ่มเพื่อน</button>
+                        <div style="margin-bottom: 16px; position: relative;">
+                            <input type="text" id="friend-search-input" placeholder="ค้นหาด้วยอีเมล หรือ ชื่อ..." style="width:100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: .9rem; box-sizing:border-box;" oninput="liveSearchFriend()" autocomplete="off">
+                            <div id="friend-search-results" style="display:none; background:#fff; border:1px solid var(--border); border-radius: var(--radius-sm); margin-top:4px; box-shadow: var(--shadow); max-height:220px; overflow-y:auto;"></div>
+                            <button class="btn btn-primary btn-sm btn-full" style="margin-top: 8px;" onclick="searchAndAddFriend()">➕ เพิ่มเพื่อน</button>
                         </div>
                         <h3>เพื่อนของคุณ</h3>
                         <div id="friends-list" class="friends-list"></div>
