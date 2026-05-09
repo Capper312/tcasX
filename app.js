@@ -137,6 +137,51 @@ function handleLogin(e) {
 }
 function handleLogout() { currentUser=null; localStorage.removeItem('tcas_current'); showPage('page-landing'); toast('ออกจากระบบแล้ว'); }
 
+function handleGoogleAuth(type) {
+  // Simulate Google Auth
+  toast('กำลังเชื่อมต่อกับ Google... ⏳');
+  setTimeout(() => {
+    const email = 'google_user@gmail.com';
+    const name = 'Google User';
+    const users = getAllUsers();
+    let found = users.find(u => u.email === email);
+    
+    if (type === 'register') {
+      if (found) {
+        toast('บัญชี Google นี้ลงทะเบียนแล้ว กำลังเข้าสู่ระบบ...');
+      } else {
+        found = {
+          name: name,
+          email: email,
+          password: 'google_oauth_dummy',
+          year: 'ม.6',
+          track: 'วิทย์-คณิต',
+          faculty: 'eng',
+          bio: 'เชื่อมต่อผ่าน Google',
+          school: '',
+          isPublic: false,
+          activities: [],
+          roadmap: [],
+          friends: [],
+          friendRequests: []
+        };
+        updateUserInList(found);
+        toast('สมัครสมาชิกด้วย Google สำเร็จ! 🎉');
+      }
+    } else {
+      if (!found) {
+        toast('ไม่พบบัญชี กรุณาสมัครสมาชิกก่อน');
+        return;
+      }
+      toast('เข้าสู่ระบบด้วย Google สำเร็จ! 👋');
+    }
+    
+    currentUser = found;
+    localStorage.setItem('tcas_current', currentUser.email);
+    showPage('page-dashboard');
+  }, 1000);
+}
+
 // ===== DASHBOARD =====
 function renderDashboard() {
   if(!currentUser) return;
