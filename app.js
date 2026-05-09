@@ -83,7 +83,7 @@ function updateUserInList(user) {
 // ===== DEMO USERS REMOVED =====
 
 // ===== INIT =====
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   // populate faculty selects
   document.querySelectorAll('#reg-faculty, #edit-faculty').forEach(sel => {
     FACULTIES.forEach(f => { const o=document.createElement('option'); o.value=f.id; o.textContent=f.name; sel.appendChild(o); });
@@ -94,7 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
     currentUser = users.find(u => u.email === savedEmail);
     if(currentUser) showPage('page-dashboard');
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 // ===== NAVIGATION =====
 function showPage(id) {
