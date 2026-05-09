@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TcasX — สร้างพอร์ตที่ใช่ ให้ถึงคณะที่ฝัน</title>
+    <meta name="description" content="ระบบช่วยวางแผนและจัดการพอร์ตโฟลิโอ TCAS รอบ 1 อย่างครบวงจร">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ============ LANDING PAGE ============ -->
+    <section id="page-landing" class="page active">
+        <div class="landing-bg">
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div><div class="shape shape-2"></div>
+                <div class="shape shape-3"></div><div class="shape shape-4"></div>
+            </div>
+            <nav class="landing-nav">
+                <div class="logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <button class="btn btn-outline" onclick="showPage('page-login')">เข้าสู่ระบบ</button>
+            </nav>
+            <div class="hero">
+                <div class="hero-text">
+                    <span class="badge">TCAS รอบ 1 — Portfolio</span>
+                    <h1>สร้างพอร์ตที่ใช่<br><span class="gradient-text">ให้ถึงคณะที่ฝัน</span></h1>
+                    <p>ระบบวิเคราะห์และวางแผนพอร์ตโฟลิโออัจฉริยะ ช่วยให้คุณรู้จุดแข็ง-จุดอ่อน แนะนำกิจกรรมที่ควรทำ พร้อม Roadmap ส่วนตัวจนพอร์ตพร้อมยื่น 100%</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-lg" onclick="showPage('page-register')">
+                            <span>เริ่มต้นใช้งาน</span>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                        <button class="btn btn-ghost btn-lg" onclick="showPage('page-login')">เข้าสู่ระบบ</button>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat"><strong>2,500+</strong><span>นักเรียนใช้งาน</span></div>
+                        <div class="stat"><strong>150+</strong><span>กิจกรรมแนะนำ</span></div>
+                        <div class="stat"><strong>85%</strong><span>ติดคณะที่เลือก</span></div>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-card card-1">
+                        <div class="mini-progress"><div class="mini-bar" style="width:78%"></div></div>
+                        <span>Portfolio Score</span><strong>78%</strong>
+                    </div>
+                    <div class="hero-card card-2">
+                        <span>🏆</span><strong>+3 กิจกรรมใหม่</strong>
+                    </div>
+                    <div class="hero-card card-3">
+                        <span>📊</span><strong>วิเคราะห์จุดแข็ง</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ REGISTER PAGE ============ -->
+    <section id="page-register" class="page">
+        <div class="auth-container">
+            <button class="back-btn" onclick="showPage('page-landing')">← กลับ</button>
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo-sm">🎯</div>
+                    <h2>สมัครสมาชิก</h2>
+                    <p>กรอกข้อมูลเพื่อเริ่มสร้างพอร์ตโฟลิโอของคุณ</p>
+                </div>
+                <form id="register-form" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label>ชื่อ-นามสกุล</label>
+                        <input type="text" id="reg-name" placeholder="กรอกชื่อ-นามสกุล" required>
+                    </div>
+                    <div class="form-group">
+                        <label>อีเมล</label>
+                        <input type="email" id="reg-email" placeholder="example@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>รหัสผ่าน</label>
+                        <input type="password" id="reg-password" placeholder="อย่างน้อย 6 ตัวอักษร" required minlength="6">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>ชั้นปี</label>
+                            <select id="reg-year" required>
+                                <option value="">เลือกชั้นปี</option>
+                                <option>ม.4</option><option>ม.5</option><option>ม.6</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>สายการเรียน</label>
+                            <select id="reg-track" required>
+                                <option value="">เลือกสาย</option>
+                                <option>วิทย์-คณิต</option><option>ศิลป์-คำนวณ</option>
+                                <option>ศิลป์-ภาษา</option><option>ศิลป์-สังคม</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>คณะเป้าหมาย</label>
+                        <select id="reg-faculty" required>
+                            <option value="">เลือกคณะที่สนใจ</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">สมัครสมาชิก</button>
+                </form>
+                <p class="auth-switch">มีบัญชีอยู่แล้ว? <a href="#" onclick="showPage('page-login')">เข้าสู่ระบบ</a></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ LOGIN PAGE ============ -->
+    <section id="page-login" class="page">
+        <div class="auth-container">
+            <button class="back-btn" onclick="showPage('page-landing')">← กลับ</button>
+            <div class="auth-card">
+                <div class="auth-header">
+                    <div class="logo-sm">🎯</div>
+                    <h2>เข้าสู่ระบบ</h2>
+                    <p>ยินดีต้อนรับกลับ! เข้าสู่ระบบเพื่อจัดการพอร์ตของคุณ</p>
+                </div>
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>อีเมล</label>
+                        <input type="email" id="login-email" placeholder="example@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>รหัสผ่าน</label>
+                        <input type="password" id="login-password" placeholder="กรอกรหัสผ่าน" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">เข้าสู่ระบบ</button>
+                </form>
+                <p class="auth-switch">ยังไม่มีบัญชี? <a href="#" onclick="showPage('page-register')">สมัครสมาชิก</a></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section id="page-dashboard" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item active" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <div>
+                        <h1 id="greeting">สวัสดี! 👋</h1>
+                        <p class="subtitle" id="faculty-label">คณะเป้าหมาย: —</p>
+                    </div>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div class="dashboard-grid">
+                    <div class="card score-card">
+                        <h3>Portfolio Score</h3>
+                        <div class="score-ring-wrap">
+                            <canvas id="score-ring" width="180" height="180"></canvas>
+                            <div class="score-value" id="score-value">0%</div>
+                        </div>
+                        <p class="score-label" id="score-label">เริ่มเพิ่มกิจกรรมเลย!</p>
+                    </div>
+                    <div class="card criteria-card">
+                        <h3>เกณฑ์ TCAS รอบ 1</h3>
+                        <div id="criteria-list" class="criteria-list"></div>
+                    </div>
+                    <div class="card radar-card">
+                        <h3>วิเคราะห์จุดแข็ง/จุดอ่อน</h3>
+                        <canvas id="radar-chart" width="280" height="280"></canvas>
+                    </div>
+                    <div class="card quick-actions">
+                        <h3>ทำอะไรต่อดี?</h3>
+                        <button class="action-btn" onclick="showPage('page-portfolio')">
+                            <span class="action-icon">📝</span>
+                            <div><strong>ตรวจสอบพอร์ตที่มี</strong><small>กรอกกิจกรรม & คำนวณ Score</small></div>
+                        </button>
+                        <button class="action-btn" onclick="showPage('page-explore')">
+                            <span class="action-icon">🔍</span>
+                            <div><strong>หาความท้าทายใหม่</strong><small>ค้นหากิจกรรม/ค่ายที่เปิดรับ</small></div>
+                        </button>
+                        <button class="action-btn" onclick="showPage('page-roadmap')">
+                            <span class="action-icon">🗺️</span>
+                            <div><strong>ดู Roadmap</strong><small>แผนกิจกรรมส่วนตัว</small></div>
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </section>
+
+    <!-- ============ PORTFOLIO CHECK ============ -->
+    <section id="page-portfolio" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item active" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1>📝 ตรวจสอบพอร์ตโฟลิโอ</h1>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div class="portfolio-layout">
+                    <div class="card add-activity-card">
+                        <h3>เพิ่มกิจกรรม</h3>
+                        <form id="activity-form" onsubmit="addActivity(event)">
+                            <div class="form-group">
+                                <label>ชื่อกิจกรรม</label>
+                                <input type="text" id="act-name" placeholder="เช่น แข่งคณิตศาสตร์โอลิมปิก" required>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>หมวดหมู่</label>
+                                    <select id="act-category" required>
+                                        <option value="">เลือกหมวด</option>
+                                        <option value="academic">📚 วิชาการ</option>
+                                        <option value="sports">⚽ กีฬา/สุขภาพ</option>
+                                        <option value="volunteer">🤝 จิตอาสา</option>
+                                        <option value="achievement">🏆 ผลงาน/รางวัล</option>
+                                        <option value="skill">🎨 ทักษะพิเศษ</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>ระดับ</label>
+                                    <select id="act-level" required>
+                                        <option value="">เลือกระดับ</option>
+                                        <option value="1">โรงเรียน</option>
+                                        <option value="2">จังหวัด/ภาค</option>
+                                        <option value="3">ประเทศ</option>
+                                        <option value="4">นานาชาติ</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>รายละเอียดเพิ่มเติม</label>
+                                <textarea id="act-desc" rows="2" placeholder="อธิบายสั้นๆ เกี่ยวกับกิจกรรมนี้"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-full">+ เพิ่มกิจกรรม</button>
+                        </form>
+                    </div>
+                    <div class="card activity-list-card">
+                        <div class="card-header-row">
+                            <h3>กิจกรรมของฉัน</h3>
+                            <span class="activity-count" id="activity-count">0 รายการ</span>
+                        </div>
+                        <div id="activity-list" class="activity-list">
+                            <div class="empty-state">
+                                <span>📋</span>
+                                <p>ยังไม่มีกิจกรรม<br>เพิ่มกิจกรรมแรกของคุณเลย!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card score-breakdown-card">
+                        <h3>คะแนนแยกตามหมวด</h3>
+                        <div id="score-bars" class="score-bars"></div>
+                        <button class="btn btn-primary btn-full" style="margin-top:1rem" onclick="showPage('page-recommend')">ดูคำแนะนำเพิ่มเติม →</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </section>
+
+    <!-- ============ ACTIVITY EXPLORER ============ -->
+    <section id="page-explore" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item active" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1>🔍 ค้นหากิจกรรม & ค่าย</h1>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div class="filter-bar">
+                    <button class="filter-chip active" onclick="filterActivities('all',this)">ทั้งหมด</button>
+                    <button class="filter-chip" onclick="filterActivities('academic',this)">📚 วิชาการ</button>
+                    <button class="filter-chip" onclick="filterActivities('sports',this)">⚽ กีฬา</button>
+                    <button class="filter-chip" onclick="filterActivities('volunteer',this)">🤝 จิตอาสา</button>
+                    <button class="filter-chip" onclick="filterActivities('achievement',this)">🏆 แข่งขัน</button>
+                    <button class="filter-chip" onclick="filterActivities('skill',this)">🎨 ทักษะพิเศษ</button>
+                </div>
+                <div id="explore-grid" class="explore-grid"></div>
+            </main>
+        </div>
+    </section>
+
+    <!-- ============ RECOMMENDATIONS ============ -->
+    <section id="page-recommend" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item active" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1>💡 กิจกรรมแนะนำสำหรับคุณ</h1>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div class="recommend-intro card">
+                    <p>🤖 ระบบวิเคราะห์จากคณะเป้าหมายและกิจกรรมที่คุณมี แล้วแนะนำสิ่งที่ควรทำเพิ่มเพื่อให้พอร์ตสมบูรณ์</p>
+                </div>
+                <div id="recommend-list" class="recommend-list"></div>
+            </main>
+        </div>
+    </section>
+
+    <!-- ============ ROADMAP ============ -->
+    <section id="page-roadmap" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item active" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1>🗺️ Roadmap ส่วนตัว</h1>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div id="roadmap-progress" class="roadmap-progress card">
+                    <div class="progress-header">
+                        <span>ความคืบหน้าโดยรวม</span>
+                        <strong id="roadmap-percent">0%</strong>
+                    </div>
+                    <div class="progress-bar-lg"><div id="roadmap-bar" class="progress-fill"></div></div>
+                </div>
+                <div id="roadmap-timeline" class="timeline"></div>
+                <div id="portfolio-complete" class="card complete-card" style="display:none">
+                    <div class="confetti-wrap">🎉</div>
+                    <h2>พอร์ตพร้อมยื่น 100%!</h2>
+                    <p>ยินดีด้วย! พอร์ตโฟลิโอของคุณครบถ้วนพร้อมยื่น TCAS รอบ 1 แล้ว</p>
+                    <button class="btn btn-primary btn-lg" onclick="showPage('page-dashboard')">กลับ Dashboard</button>
+                </div>
+            </main>
+        </div>
+    </section>
+
+    <!-- ============ PROFILE PAGE ============ -->
+    <section id="page-profile" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item active" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1>👤 โปรไฟล์ของฉัน</h1>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div class="profile-layout">
+                    <div class="profile-header-card card">
+                        <div class="avatar-upload-wrap" onclick="document.getElementById('avatar-input').click()">
+                            <div class="profile-avatar" id="profile-avatar">S</div>
+                            <div class="avatar-overlay">📷</div>
+                        </div>
+                        <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(event)">
+                        <h2 id="profile-name">—</h2>
+                        <p class="profile-email" id="profile-email">—</p>
+                        <div class="profile-tags">
+                            <span class="profile-tag" id="profile-year">—</span>
+                            <span class="profile-tag" id="profile-track">—</span>
+                            <span class="profile-tag highlight" id="profile-faculty">—</span>
+                        </div>
+                        <div class="profile-score-summary">
+                            <div class="profile-stat-item"><strong id="profile-total-score">0%</strong><span>Portfolio Score</span></div>
+                            <div class="profile-stat-item"><strong id="profile-activity-count">0</strong><span>กิจกรรม</span></div>
+                            <div class="profile-stat-item"><strong id="profile-roadmap-count">0</strong><span>Roadmap</span></div>
+                        </div>
+                        <div class="profile-visibility">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="profile-public" onchange="togglePublicProfile()">
+                                <span class="toggle-slider"></span>
+                                <span>เปิดให้คนอื่นเห็นโปรไฟล์</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="profile-edit-card card">
+                        <h3>✏️ แก้ไขข้อมูล</h3>
+                        <form id="profile-form" onsubmit="saveProfile(event)">
+                            <div class="form-group">
+                                <label>ชื่อ-นามสกุล</label>
+                                <input type="text" id="edit-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>แนะนำตัว / Bio</label>
+                                <textarea id="edit-bio" rows="3" placeholder="เขียนแนะนำตัวสั้นๆ เช่น ความสนใจ เป้าหมาย..."></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>ชั้นปี</label>
+                                    <select id="edit-year"><option>ม.4</option><option>ม.5</option><option>ม.6</option></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>สายการเรียน</label>
+                                    <select id="edit-track"><option>วิทย์-คณิต</option><option>ศิลป์-คำนวณ</option><option>ศิลป์-ภาษา</option><option>ศิลป์-สังคม</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>คณะเป้าหมาย</label>
+                                <select id="edit-faculty"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>โรงเรียน</label>
+                                <input type="text" id="edit-school" placeholder="ชื่อโรงเรียนของคุณ">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-full">💾 บันทึกข้อมูล</button>
+                        </form>
+                    </div>
+                    <div class="profile-activities-card card">
+                        <h3>🏆 กิจกรรมเด่น</h3>
+                        <div id="profile-activities-list" class="profile-act-list"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </section>
+
+    <!-- ============ COMMUNITY PAGE ============ -->
+    <section id="page-community" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item active" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1>👥 ชุมชน TcasX</h1>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div class="community-intro card">
+                    <p>🌟 ดูโปรไฟล์ของสมาชิกคนอื่นๆ เพื่อแรงบันดาลใจ! เฉพาะคนที่เปิดโปรไฟล์สาธารณะเท่านั้น</p>
+                </div>
+                <div class="community-filter">
+                    <input type="text" id="community-search" placeholder="🔍 ค้นหาชื่อ หรือคณะ..." oninput="renderCommunity()">
+                </div>
+                <div id="community-grid" class="community-grid"></div>
+
+                <!-- Modal for viewing a profile -->
+                <div id="profile-modal" class="modal-overlay" style="display:none" onclick="closeModal(event)">
+                    <div class="modal-card" onclick="event.stopPropagation()">
+                        <button class="modal-close" onclick="document.getElementById('profile-modal').style.display='none'">✕</button>
+                        <div id="modal-content"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </section>
+
+    <!-- ============ TCAS INFO PAGE ============ -->
+    <section id="page-tcasinfo" class="page">
+        <div class="app-layout">
+            <aside class="sidebar">
+                <div class="sidebar-logo">🎯 <span>Tcas</span><span class="star-x">✦</span></div>
+                <nav class="sidebar-nav">
+                    <a class="nav-item" onclick="showPage('page-dashboard')">📊 Dashboard</a>
+                    <a class="nav-item" onclick="showPage('page-portfolio')">📝 ตรวจสอบพอร์ต</a>
+                    <a class="nav-item" onclick="showPage('page-explore')">🔍 ค้นหากิจกรรม</a>
+                    <a class="nav-item" onclick="showPage('page-recommend')">💡 แนะนำ</a>
+                    <a class="nav-item" onclick="showPage('page-roadmap')">🗺️ Roadmap</a>
+                    <a class="nav-item" onclick="showPage('page-profile')">👤 โปรไฟล์</a>
+                    <a class="nav-item" onclick="showPage('page-community')">👥 ชุมชน</a>
+                    <a class="nav-item active" onclick="showPage('page-tcasinfo')">📋 เกณฑ์ TCAS</a>
+                </nav>
+                <button class="btn btn-outline btn-sm sidebar-logout" onclick="handleLogout()">ออกจากระบบ</button>
+            </aside>
+            <main class="main-content">
+                <header class="top-bar">
+                    <h1>📋 เกณฑ์ TCAS รอบ 2-3</h1>
+                    <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
+                </header>
+                <div class="tcas-tabs">
+                    <button class="tcas-tab active" onclick="switchTcasTab('quota',this)">📌 รอบ 2 — โควตา</button>
+                    <button class="tcas-tab" onclick="switchTcasTab('admission',this)">📝 รอบ 3 — Admission</button>
+                </div>
+                <div class="tcas-faculty-filter">
+                    <label>เลือกคณะ:</label>
+                    <select id="tcas-faculty-select" onchange="renderTcasInfo()">
+                        <option value="all">ทุกคณะ</option>
+                    </select>
+                </div>
+                <div id="tcas-info-content" class="tcas-info-content"></div>
+            </main>
+        </div>
+    </section>
+
+    <!-- Toast notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
