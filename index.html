@@ -3,36 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ===== SEO META TAGS ===== -->
+    <meta name="description" content="TcasX — แพลตฟอร์มวางแผนการสอบ TCAS สำหรับนักเรียนไทย จัดการ Portfolio, ค้นหากิจกรรม, วางแผน Roadmap และแชทกับเพื่อน">
+    <meta name="keywords" content="TCAS, TCAS67, TCAS68, สอบเข้ามหาวิทยาลัย, portfolio นักเรียน, วางแผนการสอบ, TcasX">
+    <meta name="author" content="TcasX Team">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#FF6B35">
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://tcasx.netlify.app/">
+    <meta property="og:title" content="TcasX — แพลตฟอร์มวางแผน TCAS สำหรับนักเรียนไทย">
+    <meta property="og:description" content="จัดการ Portfolio, ค้นหากิจกรรม, วางแผน Roadmap และแชทกับเพื่อนแบบ Real-time">
+    <meta property="og:image" content="https://tcasx.netlify.app/og-image.png">
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TcasX — แพลตฟอร์มวางแผน TCAS">
+    <meta name="twitter:description" content="จัดการ Portfolio, ค้นหากิจกรรม, วางแผน Roadmap และแชทกับเพื่อนแบบ Real-time">
+    <meta name="twitter:image" content="https://tcasx.netlify.app/og-image.png">
+    <!-- Canonical -->
+    <link rel="canonical" href="https://tcasx.netlify.app/">
     <title>TcasX — สร้างพอร์ตที่ใช่ ให้ถึงคณะที่ฝัน</title>
     <meta name="description" content="ระบบช่วยวางแผนและจัดการพอร์ตโฟลิโอ TCAS รอบ 1 อย่างครบวงจร">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Google Sign-In handled by Firebase Auth SDK -->
     <!-- ===== FIREBASE SDK ===== -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script>
-      // ▼▼▼ แทนที่ด้วย firebaseConfig จาก Firebase Console ของคุณ ▼▼▼
+      // ===== Firebase Config — Project: kongphopic =====
       const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT.firebaseapp.com",
-        databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-        projectId: "YOUR_PROJECT",
-        storageBucket: "YOUR_PROJECT.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
+        apiKey: "AIzaSyAc67hiEA1SUPWHTORLP3x7xNOiTPuYBZE",
+        authDomain: "kongphopic.firebaseapp.com",
+        databaseURL: "https://kongphopic-default-rtdb.firebaseio.com",
+        projectId: "kongphopic",
+        storageBucket: "kongphopic.firebasestorage.app",
+        messagingSenderId: "946220383989",
+        appId: "1:946220383989:web:afd0c41d3911c6e942cfbc"
       };
       try { firebase.initializeApp(firebaseConfig); } catch(e) { console.warn('Firebase init failed:', e.message); }
     </script>
 </head>
 <body>
-    <div id="g_id_onload"
-         data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
-         data-context="use"
-         data-ux_mode="popup"
-         data-callback="handleGoogleCallback"
-         data-auto_prompt="false">
-    </div>
+    <!-- Google Sign-In is now handled by Firebase Auth (signInWithPopup) -->
     <!-- ============ LANDING PAGE ============ -->
     <section id="page-landing" class="page active">
         <div class="landing-bg">
@@ -127,9 +141,10 @@
                     <button type="submit" class="btn btn-primary btn-full">สมัครสมาชิก</button>
                 </form>
                 <div class="auth-divider"><span>หรือ</span></div>
-                <div style="display:flex; justify-content:center; margin-bottom: 16px; width: 100%;">
-                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signup_with" data-size="large" data-logo_alignment="center" data-width="380"></div>
-                </div>
+                <button class="btn btn-google btn-full" id="reg-google-btn" onclick="handleGoogleSignIn()">
+                    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.2 3.1 29.4 1 24 1 14.8 1 7 6.7 3.9 14.6l7 5.4C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l7 5.4c4.1-3.8 6.5-9.4 6.5-16.1z"/><path fill="#FBBC05" d="M10.9 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7-5.4C2.5 16.9 1.5 20.4 1.5 24s1 7.1 2.4 10l7-5.4z"/><path fill="#34A853" d="M24 46.5c5.4 0 9.9-1.8 13.2-4.8l-7-5.4c-1.8 1.2-4.1 1.9-6.2 1.9-6.2 0-11.5-4.2-13.4-9.9l-7 5.4C7 41.8 14.8 46.5 24 46.5z"/></svg>
+                    <span>สมัครด้วย Google</span>
+                </button>
                 <p class="auth-switch">มีบัญชีอยู่แล้ว? <a href="#" onclick="showPage('page-login')">เข้าสู่ระบบ</a></p>
             </div>
         </div>
@@ -160,9 +175,10 @@
                     <button type="submit" class="btn btn-primary btn-full">เข้าสู่ระบบ</button>
                 </form>
                 <div class="auth-divider"><span>หรือ</span></div>
-                <div style="display:flex; justify-content:center; margin-bottom: 16px; width: 100%;">
-                    <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signin_with" data-size="large" data-logo_alignment="center" data-width="380"></div>
-                </div>
+                <button class="btn btn-google btn-full" id="login-google-btn" onclick="handleGoogleSignIn()">
+                    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.2 3.1 29.4 1 24 1 14.8 1 7 6.7 3.9 14.6l7 5.4C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l7 5.4c4.1-3.8 6.5-9.4 6.5-16.1z"/><path fill="#FBBC05" d="M10.9 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7-5.4C2.5 16.9 1.5 20.4 1.5 24s1 7.1 2.4 10l7-5.4z"/><path fill="#34A853" d="M24 46.5c5.4 0 9.9-1.8 13.2-4.8l-7-5.4c-1.8 1.2-4.1 1.9-6.2 1.9-6.2 0-11.5-4.2-13.4-9.9l-7 5.4C7 41.8 14.8 46.5 24 46.5z"/></svg>
+                    <span>เข้าสู่ระบบด้วย Google</span>
+                </button>
                 <p class="auth-switch">ยังไม่มีบัญชี? <a href="#" onclick="showPage('page-register')">สมัครสมาชิก</a></p>
             </div>
         </div>
@@ -293,9 +309,43 @@
                     <h1>📝 ตรวจสอบพอร์ตโฟลิโอ</h1>
                     <button class="btn btn-icon" onclick="toggleMobileMenu()">☰</button>
                 </header>
+
+                <!-- Portfolio Summary Banner -->
+                <div class="portfolio-summary-banner" id="portfolio-summary-banner">
+                    <div class="psb-score">
+                        <div class="psb-ring-wrap">
+                            <canvas id="psb-ring" width="90" height="90"></canvas>
+                            <div class="psb-ring-val" id="psb-ring-val">0%</div>
+                        </div>
+                        <div>
+                            <div class="psb-score-label">Portfolio Score</div>
+                            <div class="psb-score-sub" id="psb-score-sub">เริ่มเพิ่มกิจกรรมเลย!</div>
+                        </div>
+                    </div>
+                    <div class="psb-stats" id="psb-stats">
+                        <div class="psb-stat">
+                            <span class="psb-stat-num" id="psb-total-acts">0</span>
+                            <span class="psb-stat-label">กิจกรรมทั้งหมด</span>
+                        </div>
+                        <div class="psb-stat">
+                            <span class="psb-stat-num" id="psb-top-cat">—</span>
+                            <span class="psb-stat-label">หมวดเด่น</span>
+                        </div>
+                        <div class="psb-stat">
+                            <span class="psb-stat-num" id="psb-highest-level">—</span>
+                            <span class="psb-stat-label">ระดับสูงสุด</span>
+                        </div>
+                    </div>
+                    <div class="psb-actions">
+                        <button class="btn btn-outline" onclick="showPage('page-recommend')" style="color:#fff;border-color:rgba(255,255,255,0.5);">💡 ดูคำแนะนำ</button>
+                        <button class="btn" onclick="showPage('page-roadmap')" style="background:rgba(255,255,255,0.2);color:#fff;border:none;">🗺️ Roadmap</button>
+                    </div>
+                </div>
+
                 <div class="portfolio-layout">
+                    <!-- Add Activity Form -->
                     <div class="card add-activity-card">
-                        <h3>เพิ่มกิจกรรม</h3>
+                        <h3>➕ เพิ่มกิจกรรม</h3>
                         <form id="activity-form" onsubmit="addActivity(event)">
                             <div class="form-group">
                                 <label>ชื่อกิจกรรม</label>
@@ -320,10 +370,10 @@
                                     <label>ระดับ</label>
                                     <select id="act-level" required>
                                         <option value="">เลือกระดับ</option>
-                                        <option value="1">โรงเรียน</option>
-                                        <option value="2">จังหวัด/ภาค</option>
-                                        <option value="3">ประเทศ</option>
-                                        <option value="4">นานาชาติ</option>
+                                        <option value="1">🏫 โรงเรียน</option>
+                                        <option value="2">🏙️ จังหวัด/ภาค</option>
+                                        <option value="3">🇹🇭 ประเทศ</option>
+                                        <option value="4">🌏 นานาชาติ</option>
                                     </select>
                                 </div>
                             </div>
@@ -331,12 +381,14 @@
                                 <label>รายละเอียดเพิ่มเติม</label>
                                 <textarea id="act-desc" rows="2" placeholder="อธิบายสั้นๆ เกี่ยวกับกิจกรรมนี้"></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-full">+ เพิ่มกิจกรรม</button>
+                            <button type="submit" class="btn btn-primary btn-full">✨ เพิ่มกิจกรรม</button>
                         </form>
                     </div>
+
+                    <!-- Activity List -->
                     <div class="card activity-list-card">
                         <div class="card-header-row">
-                            <h3>กิจกรรมของฉัน</h3>
+                            <h3>📋 กิจกรรมของฉัน</h3>
                             <span class="activity-count" id="activity-count">0 รายการ</span>
                         </div>
                         <div id="activity-list" class="activity-list">
@@ -346,10 +398,16 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Score Breakdown -->
                     <div class="card score-breakdown-card">
-                        <h3>คะแนนแยกตามหมวด</h3>
+                        <div class="card-header-row" style="margin-bottom:24px">
+                            <h3>📊 คะแนนแยกตามหมวด</h3>
+                            <span id="port-faculty-match" class="activity-count"></span>
+                        </div>
                         <div id="score-bars" class="score-bars"></div>
-                        <button class="btn btn-primary btn-full" style="margin-top:1rem" onclick="showPage('page-recommend')">ดูคำแนะนำเพิ่มเติม →</button>
+                        <div id="port-category-insight" class="port-category-insight"></div>
+                        <button class="btn btn-primary btn-full" style="margin-top:1.5rem" onclick="showPage('page-recommend')">💡 ดูคำแนะนำเพิ่มเติม →</button>
                     </div>
                 </div>
             </main>
@@ -649,7 +707,7 @@
                             <div class="chat-empty-state">เริ่มการสนทนากับเพื่อนของคุณเลย! 👋</div>
                         </div>
                         <div id="chat-input-area" class="chat-input-area" style="display: none;">
-                            <input type="text" id="chat-input" placeholder="พิมพ์ข้อความ..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+                            <input type="text" id="chat-input" placeholder="พิมพ์ข้อความ..." onkeypress="if(event.key==='Enter') sendChatMessage()" oninput="if(activeChatFriend) updateTypingStatus(getChatId(currentUser.email, activeChatFriend), this.value.length > 0)">
                             <button class="btn btn-primary" onclick="sendChatMessage()">ส่ง</button>
                         </div>
                     </div>
@@ -698,6 +756,56 @@
 
     <!-- Toast notification -->
     <div id="toast" class="toast"></div>
+
+    <!-- ============ FLOATING FEEDBACK BUTTON ============ -->
+    <button class="feedback-fab" id="feedback-fab-btn" onclick="openFeedbackModal()" title="รายงานปัญหา / ส่ง Feedback">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            <line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/>
+        </svg>
+        <span class="fab-label">รายงานปัญหา</span>
+    </button>
+
+    <!-- ============ FEEDBACK MODAL ============ -->
+    <div class="modal-overlay" id="feedback-modal" style="display:none" onclick="closeFeedbackOnBg(event)">
+        <div class="feedback-modal-card" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+            <div class="feedback-modal-header">
+                <div class="feedback-modal-icon">💬</div>
+                <div>
+                    <h2 id="feedback-title">รายงานปัญหา / Feedback</h2>
+                    <p>ความคิดเห็นของคุณช่วยให้เราพัฒนาได้ดีขึ้น</p>
+                </div>
+                <button class="modal-close" onclick="closeFeedbackModal()" aria-label="ปิด">✕</button>
+            </div>
+
+            <div class="feedback-modal-body">
+                <div class="feedback-type-row" id="feedback-type-row">
+                    <button class="ftype-chip active" onclick="setFeedbackType(this,'🐛 พบบัก')" data-type="🐛 พบบัก">🐛 พบบัก</button>
+                    <button class="ftype-chip" onclick="setFeedbackType(this,'💡 ข้อเสนอแนะ')" data-type="💡 ข้อเสนอแนะ">💡 ข้อเสนอแนะ</button>
+                    <button class="ftype-chip" onclick="setFeedbackType(this,'🎨 UI/UX')" data-type="🎨 UI/UX">🎨 UI/UX</button>
+                    <button class="ftype-chip" onclick="setFeedbackType(this,'🙏 อื่น ๆ')" data-type="🙏 อื่น ๆ">🙏 อื่น ๆ</button>
+                </div>
+
+                <div class="form-group" style="margin-bottom:14px">
+                    <label for="feedback-name">ชื่อผู้ส่ง</label>
+                    <input type="text" id="feedback-name" placeholder="ชื่อของคุณ" maxlength="60" autocomplete="name">
+                </div>
+                <div class="form-group" style="margin-bottom:6px">
+                    <label for="feedback-text">รายละเอียด <span style="color:var(--primary)">*</span></label>
+                    <textarea id="feedback-text" rows="5" placeholder="อธิบายปัญหาหรือข้อเสนอแนะของคุณที่นี่..." maxlength="1000"></textarea>
+                    <div class="feedback-char-count"><span id="feedback-char">0</span>/1000</div>
+                </div>
+            </div>
+
+            <div class="feedback-modal-footer">
+                <button class="btn btn-outline" onclick="closeFeedbackModal()">ยกเลิก</button>
+                <button class="btn btn-primary" id="feedback-submit-btn" onclick="submitFeedback()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    ส่ง Feedback
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="app.js"></script>
 </body>
