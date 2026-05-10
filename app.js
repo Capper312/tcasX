@@ -97,6 +97,16 @@ function initFirebase() {
       console.warn('Firebase read error, falling back:', err);
       _usersCache = JSON.parse(localStorage.getItem('tcas_users') || '[]');
     });
+
+    // Firebase Auth state listener
+    if (typeof firebase.auth === 'function') {
+      firebase.auth().onAuthStateChanged(firebaseUser => {
+        // Only auto-login if no manual session exists
+        if (firebaseUser && !localStorage.getItem('tcas_current')) {
+          _processGoogleUser(firebaseUser.email, firebaseUser.displayName, firebaseUser.photoURL);
+        }
+      });
+    }
   } catch(e) {
     console.warn('Firebase not available, using localStorage only:', e.message);
     _usersCache = JSON.parse(localStorage.getItem('tcas_users') || '[]');
@@ -124,38 +134,6 @@ function updateUserInList(user) {
   }
 }
 
-// ===== FIREBASE CHAT =====
-let _activeChatListener = null;
-
-function getAllChats() { return JSON.parse(localStorage.getItem('tcas_chats') || '{}'); }
-
-function listenToChat(chatId, callback) {
-  if (_activeChatListener) { _activeChatListener(); _activeChatListener = null; }
-  if (_firebaseReady && _db) {
-    const ref = _db.ref('/chats/' + chatId + '/messages');
-    const handler = ref.on('value', snap => {
-      const data = snap.val() || {};
-      const msgs = Object.values(data).sort((a,b) => a.time - b.time);
-      callback(msgs);
-    });
-    _activeChatListener = () => ref.off('value', handler);
-  } else {
-    const chats = getAllChats();
-    callback(chats[chatId] || []);
-  }
-}
-
-function saveChatMessage(chatId, msg) {
-  if (_firebaseReady && _db) {
-    _db.ref('/chats/' + chatId + '/messages').push(msg).catch(console.warn);
-  } else {
-    const chats = getAllChats();
-    if (!chats[chatId]) chats[chatId] = [];
-    chats[chatId].push(msg);
-    localStorage.setItem('tcas_chats', JSON.stringify(chats));
-  }
-}
-
 // ===== DEMO USERS REMOVED =====
 
 // ===== INIT =====
@@ -170,12 +148,16 @@ function initApp() {
     // Try to restore session — wait a moment for Firebase cache to populate
     const tryRestore = () => {
       const u = _usersCache.find(u => u.email === savedEmail);
-      if (u) { currentUser = u; showPage('page-dashboard'); }
-      else if (!_firebaseReady) {
-        // Firebase not ready yet — fallback to localStorage snapshot
+      // Try Firebase cache then localStorage
+      let found = _usersCache.find(u => u.email === savedEmail);
+      if (!found) {
         const lsUsers = JSON.parse(localStorage.getItem('tcas_users') || '[]');
-        const lu = lsUsers.find(u => u.email === savedEmail);
-        if (lu) { currentUser = lu; showPage('page-dashboard'); }
+        found = lsUsers.find(u => u.email === savedEmail);
+      }
+      if (found) {
+        currentUser = found;
+        showPage('page-dashboard');
+        setTimeout(() => listenToFriendRequests(), 500);
       }
     };
     // Give Firebase 800ms to connect, then try restore
@@ -241,17 +223,49 @@ function handleRegister(e) {
 }
 function handleLogin(e) {
   e.preventDefault();
-  const email = document.getElementById('login-email').value;
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
   const password = document.getElementById('login-password').value;
-  const users = getAllUsers();
-  const found = users.find(u => u.email === email && u.password === password);
-  if(found) {
-    currentUser = found;
-    localStorage.setItem('tcas_current', currentUser.email);
-    toast('เข้าสู่ระบบสำเร็จ! 👋');
-    showPage('page-dashboard');
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  const doLogin = (users) => {
+    const found = users.find(u => u.email && u.email.toLowerCase() === email && u.password === password);
+    if (found) {
+      currentUser = found;
+      localStorage.setItem('tcas_current', currentUser.email);
+      toast('เข้าสู่ระบบสำเร็จ! 🎉');
+      showPage('page-dashboard');
+      setTimeout(() => listenToFriendRequests(), 300);
+    } else {
+      toast('❌ อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'เข้าสู่ระบบ'; }
+    }
+  };
+
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'กำลังเข้าสู่ระบบ...'; }
+
+  // 1st: try Firebase cache, 2nd: try localStorage, 3rd: fetch from Firebase directly
+  if (_firebaseReady && _usersCache.length > 0) {
+    doLogin(_usersCache);
   } else {
-    toast('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    const lsUsers = JSON.parse(localStorage.getItem('tcas_users') || '[]');
+    if (lsUsers.length > 0) {
+      doLogin(lsUsers);
+    } else if (_firebaseReady && _db) {
+      _db.ref('/users').once('value').then(snap => {
+        const fbUsers = Object.values(snap.val() || {});
+        _usersCache = fbUsers;
+        doLogin(fbUsers);
+      }).catch(() => {
+        toast('❌ ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'เข้าสู่ระบบ'; }
+      });
+    } else {
+      // Firebase not ready yet — wait then retry
+      setTimeout(() => {
+        const retryUsers = _usersCache.length > 0 ? _usersCache : JSON.parse(localStorage.getItem('tcas_users') || '[]');
+        doLogin(retryUsers);
+      }, 1200);
+    }
   }
 }
 
@@ -313,30 +327,56 @@ function handleResetPassword(e) {
 }
 function handleLogout() { currentUser=null; localStorage.removeItem('tcas_current'); showPage('page-landing'); toast('ออกจากระบบแล้ว'); }
 
-function handleGoogleCallback(response) {
-  // Decode JWT Token
-  const base64Url = response.credential.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-  }).join(''));
-  
-  const payload = JSON.parse(jsonPayload);
-  const email = payload.email;
-  const name = payload.name;
-  const avatar = payload.picture;
-  
+// ===== GOOGLE SIGN-IN (Firebase Auth) =====
+function handleGoogleSignIn() {
+  if (typeof firebase === 'undefined' || typeof firebase.auth !== 'function') {
+    toast('⚠️ Firebase Auth ยังไม่ได้ตั้งค่า กรุณาตั้งค่า Firebase ก่อน');
+    return;
+  }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.addScope('profile');
+  provider.addScope('email');
+
+  // Show loading state
+  document.querySelectorAll('#login-google-btn, #reg-google-btn').forEach(btn => {
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">⟳</span> กำลังเข้าสู่ระบบ...'; }
+  });
+
+  firebase.auth().signInWithPopup(provider)
+    .then(result => {
+      const user = result.user;
+      _processGoogleUser(user.email, user.displayName, user.photoURL);
+    })
+    .catch(err => {
+      console.error('Google Sign-In Error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        toast('❌ ปิด Popup ก่อนเสร็จ ลองใหม่อีกครั้ง');
+      } else if (err.code === 'auth/popup-blocked') {
+        toast('🚫 บราวเซอร์บล็อก Popup กรุณาอนุญาต Popup และลองใหม่');
+      } else {
+        toast('❌ เข้าสู่ระบบไม่สำเร็จ: ' + (err.message || err.code));
+      }
+    })
+    .finally(() => {
+      document.querySelectorAll('#login-google-btn, #reg-google-btn').forEach(btn => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.2 3.1 29.4 1 24 1 14.8 1 7 6.7 3.9 14.6l7 5.4C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l7 5.4c4.1-3.8 6.5-9.4 6.5-16.1z"/><path fill="#FBBC05" d="M10.9 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7-5.4C2.5 16.9 1.5 20.4 1.5 24s1 7.1 2.4 10l7-5.4z"/><path fill="#34A853" d="M24 46.5c5.4 0 9.9-1.8 13.2-4.8l-7-5.4c-1.8 1.2-4.1 1.9-6.2 1.9-6.2 0-11.5-4.2-13.4-9.9l-7 5.4C7 41.8 14.8 46.5 24 46.5z"/></svg><span>${btn.id === 'login-google-btn' ? 'เข้าสู่ระบบด้วย Google' : 'สมัครด้วย Google'}</span>`;
+        }
+      });
+    });
+}
+
+function _processGoogleUser(email, name, avatar) {
   const users = getAllUsers();
   let found = users.find(u => u.email === email);
-  
   if (!found) {
-    // Register new user automatically
     found = {
-      name: name,
+      name: name || email.split('@')[0],
       email: email,
-      avatar: avatar,
+      avatar: avatar || '',
       password: 'google_oauth_dummy',
-      year: 'ม.6', // Default values
+      year: 'ม.6',
       track: 'วิทย์-คณิต',
       faculty: 'eng',
       bio: 'เชื่อมต่อผ่าน Google',
@@ -350,17 +390,26 @@ function handleGoogleCallback(response) {
     updateUserInList(found);
     toast('สมัครสมาชิกด้วย Google สำเร็จ! 🎉');
   } else {
-    // Update avatar if changed
-    if(avatar && found.avatar !== avatar) { 
-      found.avatar = avatar; 
-      updateUserInList(found); 
+    if (avatar && found.avatar !== avatar) {
+      found.avatar = avatar;
+      updateUserInList(found);
     }
     toast('เข้าสู่ระบบด้วย Google สำเร็จ! 👋');
   }
-  
   currentUser = found;
   localStorage.setItem('tcas_current', currentUser.email);
   showPage('page-dashboard');
+}
+
+// Legacy GSI callback (fallback if Firebase Auth is not configured)
+function handleGoogleCallback(response) {
+  const base64Url = response.credential.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  const payload = JSON.parse(jsonPayload);
+  _processGoogleUser(payload.email, payload.name, payload.picture);
 }
 
 // ===== DASHBOARD =====
@@ -546,17 +595,72 @@ function renderPortfolio() {
   const cnt = document.getElementById('activity-count');
   const acts = currentUser.activities||[];
   cnt.textContent = acts.length + ' รายการ';
+
+  // Build activity list HTML
   if(acts.length===0) {
     list.innerHTML = '<div class="empty-state"><span>📋</span><p>ยังไม่มีกิจกรรม<br>เพิ่มกิจกรรมแรกของคุณเลย!</p></div>';
   } else {
+    const LEVEL_LABELS = ['','🏫 โรงเรียน','🏙️ จังหวัด/ภาค','🇹🇭 ประเทศ','🌏 นานาชาติ'];
+    const LEVEL_COLORS = ['','#64748B','#2563EB','#059669','#7C3AED'];
     list.innerHTML = acts.map((a,i) => `
       <div class="activity-item">
-        <div class="activity-info"><strong>${a.name}</strong><small>${a.desc||''}</small></div>
-        <span class="activity-badge badge-${a.category}">${CAT_LABELS[a.category]}</span>
-        <button class="delete-btn" onclick="removeActivity(${i})">✕</button>
+        <div class="activity-cat-dot" style="background:${LEVEL_COLORS[parseInt(a.level)||1]}"></div>
+        <div class="activity-info">
+          <strong>${a.name}</strong>
+          <small>${a.desc||'&mdash;'}</small>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+          <span class="activity-level-badge">${LEVEL_LABELS[parseInt(a.level)||1]||'—'}</span>
+          <span class="activity-badge badge-${a.category}">${CAT_LABELS[a.category]}</span>
+          <button class="delete-btn" onclick="removeActivity(${i})" title="ลบกิจกรรม">✕</button>
+        </div>
       </div>`).join('');
   }
+
+  // Update summary banner
+  _updatePortfolioSummaryBanner(acts);
   renderScoreBars();
+}
+
+function _updatePortfolioSummaryBanner(acts) {
+  const scores = calcScores();
+  const total = Math.round(Object.values(scores).reduce((a,b)=>a+b,0)/5);
+
+  // Mini ring
+  const c = document.getElementById('psb-ring');
+  if (c) {
+    const ctx = c.getContext('2d'), cx=45, cy=45, r=36, lw=8;
+    ctx.clearRect(0,0,90,90);
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=lw; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+(Math.PI*2*total/100));
+    ctx.strokeStyle='#fff'; ctx.lineWidth=lw; ctx.lineCap='round'; ctx.stroke();
+  }
+  const rv = document.getElementById('psb-ring-val');
+  if (rv) rv.textContent = total + '%';
+  const sub = document.getElementById('psb-score-sub');
+  if (sub) sub.textContent = total>=80?'พอร์ตแข็งแกร่งมาก! 💪':total>=50?'กำลังไปได้ดี!':'เพิ่มกิจกรรมเพื่อเพิ่ม Score';
+
+  // Stats
+  const totalEl = document.getElementById('psb-total-acts');
+  if (totalEl) totalEl.textContent = acts.length;
+
+  // Top category
+  const catCount = {};
+  acts.forEach(a => { catCount[a.category] = (catCount[a.category]||0)+1; });
+  const topCatKey = Object.entries(catCount).sort((a,b)=>b[1]-a[1])[0]?.[0];
+  const topCatEl = document.getElementById('psb-top-cat');
+  if (topCatEl) topCatEl.textContent = topCatKey ? CAT_LABELS[topCatKey].split(' ')[0] : '—';
+
+  // Highest level
+  const maxLevel = acts.reduce((m,a) => Math.max(m, parseInt(a.level)||0), 0);
+  const LEVEL_NAMES = ['—','โรงเรียน','จังหวัด','ประเทศ','นานาชาติ'];
+  const hlEl = document.getElementById('psb-highest-level');
+  if (hlEl) hlEl.textContent = LEVEL_NAMES[maxLevel] || '—';
+
+  // Faculty match badge
+  const fac = FACULTIES.find(f=>f.id===currentUser?.faculty);
+  const fm = document.getElementById('port-faculty-match');
+  if (fm && fac) fm.textContent = '🎯 ' + fac.name;
 }
 
 function addActivity(e) {
@@ -583,12 +687,48 @@ function removeActivity(i) {
 function renderScoreBars() {
   const el = document.getElementById('score-bars'); if(!el) return;
   const scores = calcScores();
-  el.innerHTML = CAT_KEYS.map(k => `
+  const fac = FACULTIES.find(f=>f.id===currentUser?.faculty);
+
+  const CAT_ICONS = {academic:'📚',sports:'⚽',volunteer:'🤝',achievement:'🏆',skill:'🎨',leadership:'🌟',internship:'💼',online_course:'💻'};
+  const CAT_SHORT = {academic:'วิชาการ',sports:'กีฬา',volunteer:'จิตอาสา',achievement:'ผลงาน',skill:'ทักษะ',leadership:'ผู้นำ',internship:'ฝึกงาน',online_course:'คอร์ส'};
+
+  el.innerHTML = CAT_KEYS.map(k => {
+    const pct = scores[k];
+    const weight = fac?.weights[k] || 0;
+    const barColor = pct >= 70 ? '#059669' : pct >= 40 ? '#F59E0B' : '#FF6B35';
+    const statusIcon = pct >= weight ? '✅' : pct >= weight*0.5 ? '🔶' : '🔴';
+    return `
     <div class="score-bar-item">
-      <div class="bar-value">${scores[k]}%</div>
-      <div class="bar-container"><div class="bar-fill" style="height:${scores[k]}%"></div></div>
-      <div class="bar-label">${CAT_LABELS[k].split(' ')[1]||CAT_LABELS[k]}</div>
-    </div>`).join('');
+      <div class="sbi-icon">${CAT_ICONS[k]}</div>
+      <div class="sbi-info">
+        <div class="sbi-header">
+          <span class="sbi-name">${CAT_SHORT[k]}</span>
+          <span class="sbi-pct" style="color:${barColor}">${pct}%</span>
+        </div>
+        <div class="sbi-bar-bg">
+          <div class="sbi-bar-fill" style="width:${pct}%;background:${barColor}"></div>
+        </div>
+        ${weight > 0 ? `<div class="sbi-weight">${statusIcon} น้ำหนัก ${weight}% สำหรับ${fac?.name||'คณะที่เลือก'}</div>` : '<div class="sbi-weight" style="color:var(--border)">ไม่มีน้ำหนักในคณะนี้</div>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Category insight section
+  const insight = document.getElementById('port-category-insight');
+  if (insight && fac) {
+    const weak = CAT_KEYS.filter(k => (fac.weights[k]||0) > 0 && scores[k] < (fac.weights[k]||0));
+    if (weak.length > 0) {
+      insight.innerHTML = `
+        <div class="insight-box">
+          <div class="insight-title">⚡ จุดที่ควรพัฒนาสำหรับ ${fac.name}</div>
+          <div class="insight-chips">${weak.map(k=>`<span class="insight-chip">${CAT_ICONS[k]} ${CAT_SHORT[k]} (ขาด ${(fac.weights[k]||0)-scores[k]}%)</span>`).join('')}</div>
+        </div>`;
+    } else if (currentUser?.activities?.length > 0) {
+      insight.innerHTML = `<div class="insight-box insight-ok"><div class="insight-title">🌟 ยอดเยี่ยม! ทุกหมวดครบตามเกณฑ์ของ ${fac.name} แล้ว</div></div>`;
+    } else {
+      insight.innerHTML = '';
+    }
+  }
 }
 
 // ===== EXPLORE =====
@@ -1032,183 +1172,155 @@ const TCAS_DATA = {
   },
   edu: {
     quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครู)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT5','40%'],['A-Level ภาษาไทย','20%'],['A-Level อังกฤษ','20%']],note:'TPAT5 วัดความถนัดทางวิชาชีพครู รวมทัศนคติและจิตวิทยาการศึกษา'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครู)',type:'tpat'},{name:'A-Level ตามสาขา',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT5','30%'],['A-Level ตามสาขา','50%']],note:'สาขาวิชาที่สอน เช่น ครูคณิต ใช้ A-Level คณิต, ครูอังกฤษ ใช้ A-Level อังกฤษ'}
-  },
-  arts: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level อังกฤษ','25%'],['A-Level สังคม','20%']],note:'เน้นภาษาที่ 3 ด้วยสำหรับบางสาขา'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ภาษาไทย','30%'],['A-Level สังคม','20%'],['A-Level อังกฤษ','30%']],note:'คะแนนภาษาอังกฤษมีความสำคัญมาก'}
-  },
-  polsci: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','20%'],['A-Level อังกฤษ','20%'],['A-Level สังคม','30%']],note:'บางที่มีสอบข้อเขียนความรู้ทั่วไปทางการเมือง'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','25%'],['A-Level ภาษาไทย','25%'],['A-Level สังคม','30%'],['A-Level อังกฤษ','20%']],note:'การอ่านข่าวสารบ้านเมืองช่วยในการสอบสัมภาษณ์ได้'}
-  },
-  nurse: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','20%'],['A-Level อังกฤษ','30%']],note:'เน้นความรับผิดชอบและจิตอาสาในการพยาบาล'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','20%'],['A-Level วิทย์อื่นๆ','10%'],['A-Level อังกฤษ','20%']],note:'ต้องเป็นสายวิทย์-คณิตเท่านั้น'}
-  },
-  dent: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level วิทย์รวม',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level วิทย์','40%'],['TGAT','30%']],note:'คล้ายแพทยศาสตร์ แต่จะเน้นทักษะหัตถการเพิ่มเติม'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level 7 วิชา','70%']],note:'ใช้ระบบ กสพท'}
-  },
-  pharm: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level วิทย์','40%'],['TGAT','30%']],note:'เคมีคือวิชาที่สำคัญที่สุด'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level 7 วิชา','70%']],note:'ใช้ระบบ กสพท'}
-  },
-  allied: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%'],['A-Level อังกฤษ','20%']],note:'เหมาะสำหรับผู้ที่สนใจการแพทย์แต่ไม่ได้เรียนแพทย์โดยตรง'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level วิทย์ 3 วิชา','60%'],['A-Level คณิต 1','20%']],note:'สายวิทย์-คณิตเท่านั้น'}
-  },
-  finearts: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT2 (ศิลปกรรม)',type:'tpat'}],criteria:[['TGAT','30%'],['TPAT2','70%']],note:'ผลงาน Portfolio (รูปวาด/ผลงานศิลปะ) มีน้ำหนักมากที่สุดในทุกรอบ'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT2 (ศิลปกรรม)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT2','60%'],['A-Level ภาษาไทย','20%']],note:'ทักษะทางศิลปะเป็นตัวชี้วัดหลักในการสอบเข้า'}
-  },
-  agri: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิทย์)',type:'tpat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT3','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%']],note:'มีความมุ่งมั่นในการพัฒนาการเกษตร'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%'],['A-Level คณิต 1','20%']],note:'สายวิทย์-คณิตเท่านั้น'}
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครุศาสตร์)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT5','40%'],['A-Level ภาษาไทย','20%'],['A-Level อังกฤษ','20%']],note:'TPAT5 ทดสอบความถนัดทางวิชาชีพครู และมีสัมภาษณ์กลุ่ม'}
   }
 };
-const ALL_TRACKS = ['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'];
 
-function initTcasInfo() {
-  const sel = document.getElementById('tcas-faculty-select');
-  if(sel && sel.options.length <= 1) {
-    FACULTIES.forEach(f => { const o=document.createElement('option'); o.value=f.id; o.textContent=f.name; sel.appendChild(o); });
-  }
-  renderTcasInfo();
-}
-function switchTcasTab(tab, btn) {
-  currentTcasTab = tab;
-  document.querySelectorAll('.tcas-tab').forEach(t=>t.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  renderTcasInfo();
-}
-function renderTcasInfo() {
-  const el = document.getElementById('tcas-info-content'); if(!el) return;
-  const facFilter = document.getElementById('tcas-faculty-select')?.value || 'all';
-  const facList = facFilter==='all' ? FACULTIES : FACULTIES.filter(f=>f.id===facFilter);
-  el.innerHTML = facList.map(f => {
-    const data = TCAS_DATA[f.id]?.[currentTcasTab];
-    if(!data) return '';
-    return `
-    <div class="tcas-faculty-card">
-      <h3>${f.name}</h3>
-      <div class="tcas-faculty-sub">${currentTcasTab==='quota'?'📌 รอบ 2 โควตา':'📝 รอบ 3 Admission'}</div>
-      <div class="tcas-section">
-        <h4>📚 วิชาที่ใช้สอบ</h4>
-        <div class="tcas-exam-tags">${data.exams.map(e=>`<span class="exam-tag ${e.type}">${e.name}</span>`).join('')}</div>
-      </div>
-      <div class="tcas-section">
-        <h4>📊 สัดส่วนคะแนน</h4>
-        <table class="tcas-criteria-table"><thead><tr><th>วิชา/เกณฑ์</th><th>น้ำหนัก</th></tr></thead><tbody>${data.criteria.map(c=>`<tr><td>${c[0]}</td><td><strong>${c[1]}</strong></td></tr>`).join('')}</tbody></table>
-      </div>
-      <div class="tcas-section">
-        <h4>🎓 สายที่สมัครได้</h4>
-        <div class="tcas-track-list">${ALL_TRACKS.map(t=>`<span class="track-chip ${data.tracks.includes(t)?'allowed':'not-allowed'}">${t}</span>`).join('')}</div>
-      </div>
-      <div class="tcas-note">💡 ${data.note}</div>
-    </div>`;
-  }).join('');
-}
-
-// ===== FRIENDS & CHAT SYSTEM =====
+// ===== FRIENDS & CHAT SYSTEM (Firebase Realtime) =====
 function initUserSocials(user) {
   if(!user.friends) user.friends = [];
   if(!user.friendRequests) user.friendRequests = [];
 }
 
+// Email <-> Firebase key (replace . with ,)
+function emailToKey(e) { return e.replace(/\./g,'__dot__').replace(/@/g,'__at__'); }
+function keyToEmail(k) { return k.replace(/__dot__/g,'.').replace(/__at__/g,'@'); }
+
 function sendFriendRequest(targetEmail) {
   const users = getAllUsers();
   const targetUser = users.find(u => u.email === targetEmail);
-  if(!targetUser) return;
-  initUserSocials(targetUser);
-  if(!targetUser.friendRequests.includes(currentUser.email)) {
-    targetUser.friendRequests.push(currentUser.email);
+  if(!targetUser) { toast('ไม่พบผู้ใช้งาน'); return; }
+  initUserSocials(currentUser); initUserSocials(targetUser);
+  if(currentUser.friends.includes(targetEmail)) { toast('เป็นเพื่อนกันอยู่แล้ว'); return; }
+  const done = () => {
+    if(!targetUser.friendRequests.includes(currentUser.email))
+      targetUser.friendRequests.push(currentUser.email);
     updateUserInList(targetUser);
     toast('ส่งคำขอเป็นเพื่อนแล้ว 📨');
-    // Refresh modal if open
-    const modalContent = document.getElementById('modal-content').innerHTML;
-    if(modalContent) openProfileModal(window._communityFiltered.findIndex(u=>u.email===targetEmail));
-  }
+    if(typeof liveSearchFriend==='function') liveSearchFriend();
+    const idx=(window._communityFiltered||[]).findIndex(u=>u.email===targetEmail);
+    if(idx>=0 && document.getElementById('profile-modal')?.style.display==='flex') openProfileModal(idx);
+  };
+  if(_firebaseReady && _db) {
+    _db.ref('/friendRequests/'+emailToKey(targetEmail)+'/'+emailToKey(currentUser.email)).set(true).then(done).catch(done);
+  } else { done(); }
 }
 
 function acceptFriendRequest(targetEmail) {
   const users = getAllUsers();
   const targetUser = users.find(u => u.email === targetEmail);
   if(!targetUser) return;
-  
-  initUserSocials(currentUser);
-  initUserSocials(targetUser);
-  
-  // Remove request
+  initUserSocials(currentUser); initUserSocials(targetUser);
   currentUser.friendRequests = currentUser.friendRequests.filter(e => e !== targetEmail);
-  
-  // Add to friends
   if(!currentUser.friends.includes(targetEmail)) currentUser.friends.push(targetEmail);
   if(!targetUser.friends.includes(currentUser.email)) targetUser.friends.push(currentUser.email);
-  
-  updateUserInList(currentUser);
-  updateUserInList(targetUser);
-  toast('เพิ่มเพื่อนสำเร็จแล้ว! 🎉');
-  
-  // Refresh UI
-  if(document.getElementById('page-chat').classList.contains('active')) {
-    renderChatPage();
-  } else if(document.getElementById('profile-modal').style.display === 'flex') {
-    openProfileModal(window._communityFiltered.findIndex(u=>u.email===targetEmail));
-  }
+  const done = () => {
+    updateUserInList(currentUser); updateUserInList(targetUser);
+    toast('เพิ่มเพื่อนสำเร็จแล้ว! 🎉');
+    if(document.getElementById('page-chat').classList.contains('active')) renderChatPage();
+    else if(document.getElementById('profile-modal')?.style.display==='flex') {
+      const idx=(window._communityFiltered||[]).findIndex(u=>u.email===targetEmail);
+      if(idx>=0) openProfileModal(idx);
+    }
+    _updateFriendRequestBadge();
+  };
+  if(_firebaseReady && _db) {
+    const u={}, ck=emailToKey(currentUser.email), tk=emailToKey(targetEmail);
+    u['/friendRequests/'+ck+'/'+tk]=null; u['/friendRequests/'+tk+'/'+ck]=null;
+    _db.ref().update(u).then(done).catch(done);
+  } else { done(); }
 }
 
-let activeChatFriend = null;
+function declineFriendRequest(targetEmail) {
+  if(!currentUser) return;
+  currentUser.friendRequests = currentUser.friendRequests.filter(e => e !== targetEmail);
+  updateUserInList(currentUser);
+  if(_firebaseReady && _db)
+    _db.ref('/friendRequests/'+emailToKey(currentUser.email)+'/'+emailToKey(targetEmail)).remove();
+  renderChatPage(); toast('ปฏิเสธคำขอแล้ว');
+}
+
+let _friendRequestsListener=null;
+function listenToFriendRequests() {
+  if(!_firebaseReady||!_db||!currentUser) return;
+  if(_friendRequestsListener) _friendRequestsListener.off();
+  _friendRequestsListener = _db.ref('/friendRequests/'+emailToKey(currentUser.email));
+  _friendRequestsListener.on('value', snap => {
+    const data=snap.val()||{};
+    const senders=Object.keys(data).filter(k=>data[k]).map(keyToEmail);
+    let changed=false;
+    senders.forEach(email => {
+      if(!currentUser.friendRequests.includes(email)) { currentUser.friendRequests.push(email); changed=true; }
+    });
+    if(changed) {
+      save();
+      if(document.getElementById('page-chat')?.classList.contains('active')) renderChatPage();
+      _updateFriendRequestBadge();
+      toast('📨 มีคำขอเป็นเพื่อนใหม่!');
+    }
+  });
+}
+function _updateFriendRequestBadge() {
+  if(!currentUser) return;
+  initUserSocials(currentUser);
+  const count=currentUser.friendRequests.length;
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    if(el.textContent.includes('แชท')||el.textContent.includes('เพื่อน')) {
+      let b=el.querySelector('.req-badge');
+      if(count>0) { if(!b){b=document.createElement('span');b.className='req-badge';el.appendChild(b);}b.textContent=count; }
+      else if(b) b.remove();
+    }
+  });
+}
+
+let activeChatFriend=null, _chatListener=null;
 
 function startChat(targetEmail) {
-  document.getElementById('profile-modal').style.display = 'none';
+  document.getElementById('profile-modal').style.display='none';
   showPage('page-chat');
   selectFriendToChat(targetEmail);
 }
 
 function renderChatPage() {
   initUserSocials(currentUser);
-  const users = getAllUsers();
-  
-  // Render Friends
-  const friendsList = document.getElementById('friends-list');
-  if(currentUser.friends.length === 0) {
-    friendsList.innerHTML = '<p style="color:var(--text-secondary);font-size:.85rem;padding:10px;">ยังไม่มีเพื่อน</p>';
+  const users=getAllUsers();
+  const friendsList=document.getElementById('friends-list');
+  if(!friendsList) return;
+  if(currentUser.friends.length===0) {
+    friendsList.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem;padding:10px 4px;">ยังไม่มีเพื่อน<br><small>ค้นหาเพื่อนด้านบน</small></p>';
   } else {
-    friendsList.innerHTML = currentUser.friends.map(email => {
-      const f = users.find(u=>u.email===email);
-      if(!f) return '';
-      const isAct = activeChatFriend === email ? 'active' : '';
-      return `
-        <div class="friend-item ${isAct}" onclick="selectFriendToChat('${f.email}')">
-          <div class="friend-avatar" style="${f.avatar ? `background-image:url(${f.avatar})` : ''}">${f.avatar ? '' : f.name.charAt(0)}</div>
-          <div class="friend-info">
-            <div class="friend-name">${f.name}</div>
-          </div>
-        </div>`;
+    friendsList.innerHTML=currentUser.friends.map(email=>{
+      const f=users.find(u=>u.email===email); if(!f) return '';
+      const isAct=activeChatFriend===email?'active':'';
+      const avSt=f.avatar?`background-image:url(${f.avatar});background-size:cover;background-position:center;`:'';
+      return `<div class="friend-item ${isAct}" onclick="selectFriendToChat('${f.email}')">
+        <div class="friend-avatar" style="${avSt}">${f.avatar?'':f.name.charAt(0)}</div>
+        <div class="friend-info"><div class="friend-name">${f.name}</div>
+        <div style="font-size:.72rem;color:var(--text-secondary)">${FACULTIES.find(fc=>fc.id===f.faculty)?.name||''}</div></div>
+      </div>`;
     }).join('');
   }
-  
-  // Render Friend Requests
-  const requestsList = document.getElementById('friend-requests-list');
-  if(currentUser.friendRequests.length === 0) {
-    requestsList.innerHTML = '<p style="color:var(--text-secondary);font-size:.85rem;padding:10px;">ไม่มีคำขอใหม่</p>';
+  const reqList=document.getElementById('friend-requests-list');
+  if(!reqList) return;
+  if(currentUser.friendRequests.length===0) {
+    reqList.innerHTML='<p style="color:var(--text-secondary);font-size:.85rem;padding:10px 4px;">ไม่มีคำขอใหม่</p>';
   } else {
-    requestsList.innerHTML = currentUser.friendRequests.map(email => {
-      const f = users.find(u=>u.email===email);
-      if(!f) return '';
-      return `
-        <div class="friend-item" style="cursor:default;">
-          <div class="friend-avatar" style="${f.avatar ? `background-image:url(${f.avatar})` : ''}">${f.avatar ? '' : f.name.charAt(0)}</div>
-          <div class="friend-info">
-            <div class="friend-name">${f.name}</div>
-            <div class="friend-request-actions">
-              <button class="btn btn-primary btn-sm" style="padding:4px 8px;font-size:.7rem;" onclick="acceptFriendRequest('${f.email}')">ยอมรับ</button>
-            </div>
+    reqList.innerHTML=currentUser.friendRequests.map(email=>{
+      const f=users.find(u=>u.email===email);
+      if(!f) return `<div style="font-size:.8rem;padding:8px;color:var(--text-secondary)">${email}</div>`;
+      const avSt=f.avatar?`background-image:url(${f.avatar});background-size:cover;`:'';
+      return `<div class="friend-item" style="cursor:default;">
+        <div class="friend-avatar" style="${avSt}">${f.avatar?'':f.name.charAt(0)}</div>
+        <div class="friend-info"><div class="friend-name">${f.name}</div>
+          <div class="friend-request-actions">
+            <button class="btn btn-primary btn-sm" style="padding:4px 10px;font-size:.72rem;" onclick="acceptFriendRequest('${f.email}')">✔ ยอมรับ</button>
+            <button class="btn btn-sm" style="padding:4px 8px;font-size:.72rem;background:var(--bg);border:1px solid var(--border);" onclick="declineFriendRequest('${f.email}')">✕</button>
           </div>
-        </div>`;
+        </div>
+      </div>`;
     }).join('');
   }
+  _updateFriendRequestBadge();
 }
 
 function getChatId(email1, email2) {
@@ -1221,18 +1333,51 @@ function getAllChats() {
 
 function selectFriendToChat(email) {
   activeChatFriend = email;
-  renderChatPage(); // Update active state in sidebar
+  renderChatPage();
   
   const users = getAllUsers();
   const f = users.find(u=>u.email===email);
   if(!f) return;
   
+  const chatId = getChatId(currentUser.email, activeChatFriend);
+  const avSt = f.avatar ? `background-image:url(${f.avatar});background-size:cover;background-position:center;` : '';
+  
   document.getElementById('chat-header').innerHTML = `
-    <div class="friend-avatar" style="${f.avatar ? `background-image:url(${f.avatar})` : ''}">${f.avatar ? '' : f.name.charAt(0)}</div>
-    <div><strong>${f.name}</strong><br><small style="color:var(--text-secondary)">${FACULTIES.find(fac=>fac.id===f.faculty)?.name || ''}</small></div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="friend-avatar" style="${avSt}">${f.avatar ? '' : f.name.charAt(0)}</div>
+      <div>
+        <strong>${f.name}</strong><br>
+        <small style="color:var(--text-secondary)">${FACULTIES.find(fac=>fac.id===f.faculty)?.name || ''}</small>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="status-dot"></span>
+      <span id="chat-typing-status" style="font-size:.8rem;color:#22c55e;">Online</span>
+    </div>
   `;
   
   document.getElementById('chat-input-area').style.display = 'flex';
+  
+  // Setup typing listener
+  if(_firebaseReady && _db) {
+    if(_typingListener) { _typingListener.off(); _typingListener = null; }
+    _typingListener = _db.ref('/typing/'+chatId+'/'+emailToKey(activeChatFriend));
+    _typingListener.on('value', snap => {
+      const t = snap.val();
+      const isTyping = t && (Date.now() - t < 3500);
+      const el = document.getElementById('chat-typing-status');
+      if(el) {
+        if(isTyping) {
+          el.innerHTML = 'กำลังพิมพ์<span class="typing-dots"><span>.</span><span>.</span><span>.</span></span>';
+          el.style.color = 'var(--primary)';
+        } else {
+          el.innerHTML = 'Online';
+          el.style.color = '#22c55e';
+        }
+      }
+    });
+  }
+  
   renderChatMessages();
 }
 
@@ -1367,3 +1512,140 @@ function searchAndAddFriend() {
   input.value = '';
   if (resultsBox) resultsBox.style.display = 'none';
 }
+
+// ===== FEEDBACK / REPORT MODAL =====
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1503038397881647156/6J00mg_32OAbe-wF8hJq0ctPdfzcBwhglDCiuVCJEfMVVfIEcscp4-ZQiQnCxpjAq8-F';
+let _feedbackType = '🐛 พบบัก';
+
+function openFeedbackModal() {
+  const modal = document.getElementById('feedback-modal');
+  if (!modal) return;
+
+  // Pre-fill sender name from logged-in user
+  const nameInput = document.getElementById('feedback-name');
+  if (nameInput && currentUser?.name && !nameInput.value) {
+    nameInput.value = currentUser.name;
+  }
+
+  // Reset textarea & char count
+  const textarea = document.getElementById('feedback-text');
+  const charEl = document.getElementById('feedback-char');
+  if (textarea) {
+    textarea.value = '';
+    textarea.oninput = () => {
+      if (charEl) charEl.textContent = textarea.value.length;
+    };
+  }
+  if (charEl) charEl.textContent = '0';
+
+  // Reset type chips to first
+  document.querySelectorAll('.ftype-chip').forEach((c, i) => {
+    c.classList.toggle('active', i === 0);
+  });
+  _feedbackType = '🐛 พบบัก';
+
+  // Reset submit button
+  const btn = document.getElementById('feedback-submit-btn');
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> ส่ง Feedback'; }
+
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => { if (textarea) textarea.focus(); }, 100);
+}
+
+function closeFeedbackModal() {
+  const modal = document.getElementById('feedback-modal');
+  if (modal) modal.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function closeFeedbackOnBg(e) {
+  if (e.target === document.getElementById('feedback-modal')) closeFeedbackModal();
+}
+
+function setFeedbackType(btn, type) {
+  _feedbackType = type;
+  document.querySelectorAll('.ftype-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function submitFeedback() {
+  const nameEl = document.getElementById('feedback-name');
+  const textEl = document.getElementById('feedback-text');
+  const submitBtn = document.getElementById('feedback-submit-btn');
+
+  const senderName = (nameEl?.value.trim()) || (currentUser?.name) || 'ผู้ใช้ไม่ระบุชื่อ';
+  const message = textEl?.value.trim();
+
+  if (!message) {
+    // Shake textarea
+    if (textEl) {
+      textEl.style.borderColor = '#e53935';
+      textEl.focus();
+      setTimeout(() => { textEl.style.borderColor = ''; }, 2000);
+    }
+    toast('⚠️ กรุณาพิมพ์รายละเอียดก่อนส่ง');
+    return;
+  }
+
+  // Loading state
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block">⟳</span> กำลังส่ง...';
+  }
+
+  // Build Discord embed payload
+  const now = new Date().toLocaleString('th-TH', {
+    timeZone: 'Asia/Bangkok',
+    dateStyle: 'short',
+    timeStyle: 'short'
+  });
+
+  const colorMap = {
+    '🐛 พบบัก': 0xE53935,
+    '💡 ข้อเสนอแนะ': 0x1E88E5,
+    '🎨 UI/UX': 0x8E24AA,
+    '🙏 อื่น ๆ': 0x43A047
+  };
+  const embedColor = colorMap[_feedbackType] ?? 0xFF6B35;
+
+  const payload = {
+    username: 'TcasX Feedback',
+    avatar_url: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+    embeds: [{
+      title: `${_feedbackType}`,
+      description: message,
+      color: embedColor,
+      fields: [
+        { name: '👤 ผู้ส่ง', value: senderName, inline: true },
+        { name: '📧 อีเมล', value: currentUser?.email || '—', inline: true },
+        { name: '🕐 เวลา', value: now, inline: false }
+      ],
+      footer: { text: 'TcasX Feedback System' },
+      thumbnail: { url: 'https://cdn-icons-png.flaticon.com/512/1039/1039233.png' }
+    }]
+  };
+
+  try {
+    const res = await fetch(DISCORD_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok || res.status === 204) {
+      closeFeedbackModal();
+      toast('✅ ส่ง Feedback เรียบร้อยแล้ว ขอบคุณมากครับ! 🙏');
+    } else {
+      throw new Error('HTTP ' + res.status);
+    }
+  } catch (err) {
+    console.error('Feedback send error:', err);
+    toast('❌ ส่งไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> ลองใหม่';
+    }
+  }
+}
+
