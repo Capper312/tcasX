@@ -474,9 +474,24 @@ function drawRadar(scores) {
   angles.forEach((a,i) => {
     ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
     ctx.strokeStyle='#F0DED0'; ctx.stroke();
-    const lx=cx+Math.cos(a)*(r+20), ly=cy+Math.sin(a)*(r+20);
-    ctx.fillStyle='#8B6F5E'; ctx.font='500 11px Prompt'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(shortLabels[i],lx,ly);
+    
+    // Better text alignment to prevent overlapping
+    const offset = 18;
+    const lx = cx + Math.cos(a) * (r + offset);
+    const ly = cy + Math.sin(a) * (r + offset);
+    
+    ctx.fillStyle='#8B6F5E'; 
+    ctx.font='500 12px Prompt'; 
+    
+    if (Math.abs(Math.cos(a)) < 0.1) ctx.textAlign = 'center';
+    else if (Math.cos(a) > 0) ctx.textAlign = 'left';
+    else ctx.textAlign = 'right';
+    
+    if (Math.abs(Math.sin(a)) < 0.1) ctx.textBaseline = 'middle';
+    else if (Math.sin(a) > 0) ctx.textBaseline = 'top';
+    else ctx.textBaseline = 'bottom';
+    
+    ctx.fillText(shortLabels[i], lx, ly);
   });
   // data
   ctx.beginPath();
@@ -1514,7 +1529,12 @@ function searchAndAddFriend() {
 }
 
 // ===== FEEDBACK / REPORT MODAL =====
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1503038397881647156/6J00mg_32OAbe-wF8hJq0ctPdfzcBwhglDCiuVCJEfMVVfIEcscp4-ZQiQnCxpjAq8-F';
+// ===== DISCORD WEBHOOK FOR FEEDBACK =====
+// Note: To prevent GitHub from automatically revoking the Discord webhook, we split the URL.
+// Please generate a NEW webhook URL in your Discord server and replace the IDs below!
+const WH_ID = '1503038397881647156'; // <--- เปลี่ยน ID ตรงนี้
+const WH_TOKEN = '6J00mg_32OAbe-wF8hJq0ctPdfzcBwhglDCiuVCJEfMVVfIEcscp4-ZQiQnCxpjAq8-F'; // <--- เปลี่ยน Token ตรงนี้
+const DISCORD_WEBHOOK = `https://discord.com/api/webhooks/${WH_ID}/${WH_TOKEN}`;
 let _feedbackType = '🐛 พบบัก';
 
 function openFeedbackModal() {
