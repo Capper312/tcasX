@@ -69,6 +69,12 @@ const SAMPLE_ACTIVITIES = [
 ];
 
 let currentUser = null;
+let _currentExploreFilter = 'all';
+
+// ===== FIRESTORE REALTIME ACTIVITIES =====
+let _firestoreActivities = null;  // null = ยังโหลดไม่เสร็จ, [] = Firestore ว่าง → fallback SAMPLE
+let _firestoreDb = null;
+const ADMIN_EMAILS = ['admin@tcasx.com']; // เพิ่มอีเมล admin ที่นี่
 
 // ===== FIREBASE STORAGE LAYER =====
 let _usersCache = [];
@@ -106,6 +112,43 @@ function initFirebase() {
           _processGoogleUser(firebaseUser.email, firebaseUser.displayName, firebaseUser.photoURL);
         }
       });
+    }
+
+    // ===== FIRESTORE REALTIME ACTIVITIES =====
+    if (typeof firebase.firestore === 'function') {
+      try {
+        _firestoreDb = firebase.firestore();
+        _firestoreDb.collection('activities')
+          .orderBy('createdAt', 'desc')
+          .onSnapshot(snapshot => {
+            _firestoreActivities = snapshot.docs.map(doc => ({
+              id: doc.id,
+              name:  doc.data().name  || '',
+              cat:   doc.data().cat   || 'academic',
+              desc:  doc.data().desc  || '',
+              date:  doc.data().date  || '',
+              level: doc.data().level || 'ประเทศ',
+              isNew: doc.data().createdAt && (Date.now() - doc.data().createdAt.toMillis() < 7*24*60*60*1000)
+            }));
+            // Update live status
+            const statusEl = document.getElementById('explore-status-text');
+            if (statusEl) {
+              statusEl.textContent = `🟢 Live · ${_firestoreActivities.length} กิจกรรม (อัพเดตอัตโนมัติ)`;
+            }
+            // Re-render if explore page is active
+            if (document.getElementById('page-explore')?.classList.contains('active')) {
+              renderExplore(_currentExploreFilter);
+            }
+          }, err => {
+            console.warn('Firestore activities error:', err);
+            _firestoreActivities = [];
+            const statusEl = document.getElementById('explore-status-text');
+            if (statusEl) statusEl.textContent = '⚡ ข้อมูลจาก Cache (ออฟไลน์)';
+          });
+      } catch(e) {
+        console.warn('Firestore init error:', e);
+        _firestoreActivities = [];
+      }
     }
   } catch(e) {
     console.warn('Firebase not available, using localStorage only:', e.message);
@@ -748,22 +791,85 @@ function renderScoreBars() {
 
 // ===== EXPLORE =====
 function renderExplore(cat) {
-  const grid = document.getElementById('explore-grid'); if(!grid) return;
-  const items = cat==='all' ? SAMPLE_ACTIVITIES : SAMPLE_ACTIVITIES.filter(a=>a.cat===cat);
-  grid.innerHTML = items.map(a => `
+  _currentExploreFilter = cat || 'all';
+  const grid = document.getElementById('explore-grid');
+  if (!grid) return;
+
+  // Use Firestore data if loaded, else fallback to SAMPLE_ACTIVITIES
+  const source = (_firestoreActivities && _firestoreActivities.length > 0)
+    ? _firestoreActivities
+    : SAMPLE_ACTIVITIES;
+
+  // Get search query
+  const searchQuery = (document.getElementById('explore-search')?.value || '').trim().toLowerCase();
+
+  let items = _currentExploreFilter === 'all' ? source : source.filter(a => a.cat === _currentExploreFilter);
+  if (searchQuery) {
+    items = items.filter(a =>
+      a.name.toLowerCase().includes(searchQuery) ||
+      (a.desc || '').toLowerCase().includes(searchQuery)
+    );
+  }
+
+  if (items.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <span>🔍</span>
+        <p>ไม่พบกิจกรรมที่ตรงกับการค้นหา<br><small>ลองเปลี่ยนคำค้นหาหรือหมวดอื่น</small></p>
+      </div>`;
+    return;
+  }
+
+  const LEVEL_BADGE = {
+    'โรงเรียน': { cls: 'lvl-school',  icon: '🏫' },
+    'จังหวัด':  { cls: 'lvl-prov',    icon: '🏙️' },
+    'ภาค':      { cls: 'lvl-region',   icon: '🗺️' },
+    'ประเทศ':   { cls: 'lvl-national', icon: '🇹🇭' },
+    'นานาชาติ': { cls: 'lvl-inter',    icon: '🌏' },
+    'ออนไลน์':  { cls: 'lvl-online',   icon: '💻' }
+  };
+
+  grid.innerHTML = items.map(a => {
+    const lvl = LEVEL_BADGE[a.level] || { cls: 'lvl-school', icon: '📍' };
+    const isNew = a.isNew ? '<span class="new-badge">🆕 ใหม่</span>' : '';
+    const isLive = (_firestoreActivities && _firestoreActivities.length > 0)
+      ? '<span class="live-tag">🔴 Live</span>' : '';
+    const safeName = (a.name||'').replace(/'/g, "\\'");
+    const safeCat  = (a.cat||'').replace(/'/g, "\\'");
+    const safeDate = (a.date||'').replace(/'/g, "\\'");
+    const safeId   = a.id || '';
+    return `
     <div class="explore-card">
-      <div class="card-cat">${CAT_LABELS[a.cat]}</div>
-      <h4>${a.name}</h4>
-      <p>${a.desc}</p>
-      <div class="card-meta">
-        <span>📅 ${a.date}</span>
-        <span>📍 ${a.level}</span>
+      <div class="explore-card-top">
+        <span class="card-cat">${CAT_LABELS[a.cat] || a.cat}</span>
+        <div style="display:flex;gap:6px;align-items:center">${isNew}${isLive}</div>
       </div>
-      <div style="margin-top:14px;display:flex;gap:8px">
-        <button class="btn btn-primary btn-sm" onclick="addToRoadmap('${a.name}','${a.cat}','${a.date}')">+ Roadmap</button>
-        <button class="btn btn-outline btn-sm" onclick="quickAdd('${a.name}','${a.cat}')">+ พอร์ต</button>
+      <h4 class="explore-card-title">${a.name}</h4>
+      <p class="explore-card-desc">${a.desc || '—'}</p>
+      <div class="explore-card-meta">
+        <span>📅 ${a.date || '—'}</span>
+        <span class="level-badge ${lvl.cls}">${lvl.icon} ${a.level}</span>
       </div>
-    </div>`).join('');
+      <div class="explore-card-actions">
+        <button class="btn btn-primary btn-sm" onclick="addToRoadmap('${safeName}','${safeCat}','${safeDate}')">+ Roadmap</button>
+        <button class="btn btn-outline btn-sm" onclick="quickAdd('${safeName}','${safeCat}')">+ พอร์ต</button>
+        ${safeId ? `<button class="btn btn-ghost btn-sm admin-del-btn" id="del-${safeId}" onclick="adminDeleteActivity('${safeId}')" style="display:none">🗑️</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Show delete buttons for admins
+  if (currentUser && ADMIN_EMAILS.includes(currentUser.email)) {
+    document.querySelectorAll('.admin-del-btn').forEach(b => b.style.display = '');
+    const panel = document.getElementById('admin-panel');
+    if (panel) panel.style.display = 'block';
+  }
+
+  // Update status if still using sample data
+  if (!_firestoreActivities || _firestoreActivities.length === 0) {
+    const statusEl = document.getElementById('explore-status-text');
+    if (statusEl) statusEl.textContent = `⚡ ข้อมูล Sample · ${items.length} กิจกรรม (เชื่อมต่อ Firestore เพื่อ Realtime)`;
+  }
 }
 function filterActivities(cat, btn) {
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
@@ -1158,36 +1264,80 @@ renderProfile = function() {
 let currentTcasTab = 'quota';
 const TCAS_DATA = {
   eng: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิศวะ)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'}],criteria:[['TGAT','≥ 30%'],['TPAT3','≥ 25%'],['A-Level คณิต 1','≥ 25%'],['A-Level ฟิสิกส์','≥ 20%']],note:'บางมหาวิทยาลัยใช้โควตาภูมิภาค เช่น พื้นที่ภาคเหนือ/อีสาน ต้องมีทะเบียนบ้านในพื้นที่'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิศวะ)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT3','30%'],['A-Level คณิต 1','20%'],['A-Level ฟิสิกส์','15%'],['A-Level เคมี','5%'],['A-Level อังกฤษ','10%']],note:'คะแนนรวมขั้นต่ำแตกต่างตามมหาวิทยาลัย เช่น จุฬาฯ ~20,000 คะแนน, มธ. ~18,000'}
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิศวะ)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT3','30%'],['A-Level คณิต 1','25%'],['A-Level ฟิสิกส์','25%']],note:'เน้นรับภูมิภาค หรือโครงการเรียนดี'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิศวะ)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT3','30%'],['A-Level คณิต 1','20%'],['A-Level ฟิสิกส์','15%'],['A-Level เคมี','5%'],['A-Level อังกฤษ','10%']],note:'ส่วนใหญ่กำหนดขั้นต่ำภาษาอังกฤษ 20% ขึ้นไป'}
   },
   med: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (แพทย์)',type:'tpat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['กสพท (วิชาเฉพาะ)','30%'],['A-Level วิทย์รวม','40%'],['TGAT/TPAT1','30%']],note:'ต้องผ่านเกณฑ์ กสพท ก่อน และมีคะแนนขั้นต่ำแต่ละวิชา ≥ 30%'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['กสพท วิชาเฉพาะ','30%'],['A-Level 7 วิชา','70%']],note:'แพทย์ใช้ระบบ กสพท (กลุ่มสถาบันแพทย์) ไม่ได้ใช้ระบบ Admission ตรง'}
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (แพทย์)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท (วิชาเฉพาะ)','30%'],['A-Level วิทย์รวม','40%'],['TGAT/TPAT1','30%']],note:'โควตาผลิตแพทย์เพิ่มเพื่อชาวชนบท (CPIRD) โครงการโอลิมปิกวิชาการ'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท วิชาเฉพาะ','30%'],['A-Level 7 วิชา','70%']],note:'กสพท. รับรวมทั่วประเทศ ทุกคณะแพทยศาสตร์ใช้เกณฑ์เดียวกัน'}
   },
-  comm: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level อังกฤษ','25%'],['A-Level สังคม','20%']],note:'บางสาขาอาจมีสอบปฏิบัติเพิ่มเติม เช่น สาขาวารสารศาสตร์ สาขาภาพยนตร์'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','40%'],['A-Level ภาษาไทย','20%'],['A-Level สังคม','20%'],['A-Level อังกฤษ','20%']],note:'ทุกสายสามารถสมัครได้ เน้นทักษะภาษาและสังคม'}
+  dent: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1 (แพทย์)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท','30%'],['A-Level วิทย์รวม','40%'],['TGAT','30%']],note:'เน้นทดสอบความถนัดทางทันตแพทย์ในรอบโควตาสถาบัน'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท วิชาเฉพาะ','30%'],['A-Level 7 วิชา','70%']],note:'เข้าร่วม กสพท. ต้องทำคะแนนแต่ละวิชาไม่ต่ำกว่า 30%'}
   },
-  biz: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level คณิต 1','30%'],['A-Level อังกฤษ','25%'],['A-Level สังคม','15%']],note:'สาย ศิลป์-ภาษา สมัครได้บางสาขา เช่น การจัดการทั่วไป'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level คณิต 1','40%'],['A-Level อังกฤษ','30%']],note:'เน้นคณิตศาสตร์และภาษาอังกฤษ บางหลักสูตร Inter ใช้ SAT/IELTS'}
+  pharm: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1',type:'tpat'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['A-Level วิทย์','40%'],['กสพท/TGAT','30%'],['A-Level คณิต 1','30%']],note:'โครงการโควตาพื้นที่ และลูกหลานผู้ประกอบวิชาชีพร้านยา'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท วิชาเฉพาะ','30%'],['A-Level 7 วิชา','70%']],note:'เข้าร่วม กสพท. แบ่งเป็นสาขาการบริบาล และอุตสาหการ'}
   },
-  arch: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT4 (สถาปัตย์)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT4','50%'],['A-Level คณิต 1','30%']],note:'TPAT4 เน้นทดสอบทักษะการออกแบบ ความคิดสร้างสรรค์ และทักษะเชิงช่าง'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT4 (สถาปัตย์)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'}],criteria:[['TGAT','15%'],['TPAT4','40%'],['A-Level คณิต 1','25%'],['A-Level ฟิสิกส์','20%']],note:'TPAT4 คือวิชาสำคัญที่สุด ฝึกวาดภาพ สเกตช์ และออกแบบให้มาก'}
+  vet: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT1',type:'tpat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level ชีววิทยา','40%'],['TGAT','30%'],['A-Level อังกฤษ','30%']],note:'โควตาสัตว์แพทย์ส่วนใหญ่รับนักเรียนพื้นที่ หรือมี MOU'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TPAT1 (กสพท)',type:'tpat'},{name:'A-Level 7 วิชา',type:'alevel'}],criteria:[['กสพท วิชาเฉพาะ','30%'],['A-Level 7 วิชา','70%']],note:'เข้าร่วม กสพท. คะแนนขั้นต่ำ กสพท แต่ละปีค่อนข้างเสถียร'}
+  },
+  nurse: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level ชีววิทยา','30%'],['A-Level อังกฤษ','30%'],['A-Level เคมี','20%'],['TGAT','20%']],note:'โควตาบุตรหลาน อสม. หรือโควตาสาธารณสุขจังหวัด'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level ชีววิทยา','30%'],['A-Level อังกฤษ','20%'],['A-Level เคมี','20%'],['TGAT','20%'],['A-Level ฟิสิกส์','10%']],note:'ต้องเป็นสายวิทย์-คณิตเท่านั้น สุขภาพกายต้องสมบูรณ์ตามเกณฑ์วิชาชีพ'}
+  },
+  allied: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%'],['TGAT','20%'],['A-Level คณิต 1','20%']],note:'เทคนิคการแพทย์, กายภาพบำบัด, รังสีเทคนิค ฯลฯ'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['A-Level วิทย์ 3 วิชา','60%'],['A-Level คณิต 1','20%'],['TGAT','20%']],note:'รับเฉพาะแผนการเรียนวิทย์-คณิต'}
+  },
+  pubhealth: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'}],criteria:[['A-Level ชีววิทยา','40%'],['A-Level เคมี','30%'],['TGAT','30%']],note:'สาธารณสุขศาสตร์ สุขาภิบาล อาชีวอนามัย โควตาภูมิภาคเยอะ'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ชีววิทยา','25%'],['A-Level เคมี','20%'],['A-Level อังกฤษ','15%'],['A-Level คณิต 1','10%']],note:'บางที่รับศิลป์-คำนวณ ในสาขาบริหารสาธารณสุข'}
+  },
+  optom: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'}],criteria:[['A-Level ฟิสิกส์','40%'],['A-Level ชีววิทยา','30%'],['TGAT','30%']],note:'ทัศนมาตรศาสตร์ เน้นฟิสิกส์เรื่องแสง และชีววิทยาเรื่องตา'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level ฟิสิกส์','25%'],['A-Level ชีววิทยา','25%'],['A-Level อังกฤษ','20%'],['TGAT','20%'],['A-Level คณิต 1','10%']],note:'ต้องไม่มีตาบอดสีรุนแรง และสุขภาพตาผ่านเกณฑ์'}
+  },
+  medsci: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'}],criteria:[['A-Level ชีววิทยา','40%'],['A-Level เคมี','40%'],['TGAT','20%']],note:'วิทยาศาสตร์การแพทย์ พื้นฐานคล้ายการแพทย์'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['A-Level ชีววิทยา','35%'],['A-Level เคมี','35%'],['A-Level คณิต 1','15%'],['TGAT','15%']],note:'ต่อยอดปริญญาโท-เอก งานวิจัยทางการแพทย์ได้ดี'}
+  },
+  it: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level คณิต 1','40%'],['TGAT','30%'],['A-Level อังกฤษ','30%']],note:'วิทยาการคอมพิวเตอร์ / เทคโนโลยีสารสนเทศ'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level คณิต 1','40%'],['TGAT','20%'],['A-Level อังกฤษ','20%'],['A-Level ฟิสิกส์ (เฉพาะสายวิทย์)','20%']],note:'บางมหาวิทยาลัยมีสาขา IT ที่รับศิลป์ภาษาด้วย (ใช้คณิต 2)'}
   },
   sci: {
-    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิทย์)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ชีววิทยา',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT3','20%'],['A-Level คณิต 1','20%'],['A-Level วิทย์ 3 วิชา','40%']],note:'บางสาขาเน้นวิชาเฉพาะ เช่น วิทยาการคอมฯ เน้นคณิต, ชีววิทยาเน้นชีวะ'},
-    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['A-Level คณิต 1','20%'],['A-Level วิทย์ 3 วิชา','50%'],['A-Level อังกฤษ','10%']],note:'ต้องเป็นสายวิทย์-คณิตเท่านั้น คะแนนขั้นต่ำ ≥ 25% ทุกวิชา'}
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level ฟิสิกส์/เคมี/ชีววิทยา',type:'alevel'}],criteria:[['A-Level วิทย์ (ตามเอก)','40%'],['A-Level คณิต 1','30%'],['TGAT','30%']],note:'วิทยาศาสตร์ (เคมี, ฟิสิกส์, ชีววิทยา, แมท, สถิติ)'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1',type:'alevel'},{name:'A-Level 3 วิทย์',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level 3 วิทย์','40%'],['A-Level คณิต 1','30%'],['TGAT','20%'],['A-Level อังกฤษ','10%']],note:'คะแนนค่อนข้างแกว่งตามสาขาวิชา'}
+  },
+  finearts: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT2 (ศิลปกรรม)',type:'tpat'}],criteria:[['TPAT2','70%'],['TGAT','30%']],note:'ผลงาน Portfolio (รูปวาด/ผลงานศิลปะ) มีน้ำหนักมากที่สุดในทุกรอบ'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT2 (ศิลปกรรม)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'}],criteria:[['TPAT2','60%'],['TGAT','20%'],['A-Level ภาษาไทย','20%']],note:'ทักษะทางศิลปะ ดนตรี หรือการแสดง เป็นตัวชี้วัดหลักในการสอบเข้า'}
+  },
+  agri: {
+    quota: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT3 (วิทย์)',type:'tpat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'}],criteria:[['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%'],['TGAT','20%'],['TPAT3','20%']],note:'เกษตรศาสตร์, วนศาสตร์, ประมง มีโครงการโควตาทายาทเกษตรกร'},
+    admission: {tracks:['วิทย์-คณิต'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ชีววิทยา',type:'alevel'},{name:'A-Level เคมี',type:'alevel'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['A-Level ชีววิทยา','30%'],['A-Level เคมี','30%'],['TGAT','20%'],['A-Level คณิต 1','20%']],note:'บางคณะในกลุ่มเกษตรเปิดรับศิลป์-คำนวณ ในสาขาเศรษฐศาสตร์เกษตร'}
+  },
+  comm: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level สังคม','25%'],['A-Level อังกฤษ','20%']],note:'นิเทศศาสตร์ วารสารศาสตร์ สื่อสารมวลชน บางที่ต้องมีแฟ้มผลงานแนบ'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level คณิต 2 (เลือกสอบ)',type:'alevel'}],criteria:[['TGAT','40%'],['A-Level ภาษาไทย','20%'],['A-Level สังคม','20%'],['A-Level อังกฤษ (หรือ คณิต 2/ภาษาต่างประเทศ)','20%']],note:'ส่วนใหญ่เลือกยื่นแพทเทิร์นได้ 3 แบบ: คณิต 2 / ฝรั่งเศส-เยอรมัน / ภาษาเอเชีย'}
+  },
+  biz: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1/คณิต 2',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level คณิต','30%'],['A-Level อังกฤษ','25%'],['A-Level สังคม','15%']],note:'บริหารธุรกิจ บัญชี เศรษฐศาสตร์ สายศิลป์-ภาษาสามารถสมัครบริหารบางสาขาได้'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level คณิต 1/คณิต 2',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['A-Level คณิต','40%'],['TGAT','30%'],['A-Level อังกฤษ','30%']],note:'คณะบัญชี-บริหาร (หลักสูตรนานาชาติ หรือ BBA) จะใช้คะแนน SAT/IELTS เป็นหลัก'}
+  },
+  arch: {
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT4 (สถาปัตย์)',type:'tpat'},{name:'A-Level คณิต 1',type:'alevel'}],criteria:[['TPAT4','50%'],['A-Level คณิต 1','30%'],['TGAT','20%']],note:'สถาปัตยกรรมศาสตร์ (สถ.บ.) รอบโควตาภูมิภาคมักจะมีสอบ Drawing เพิ่ม'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT4 (สถาปัตย์)',type:'tpat'},{name:'A-Level คณิต 1/2',type:'alevel'},{name:'A-Level ฟิสิกส์ (เลือก)',type:'alevel'}],criteria:[['TPAT4','40%'],['A-Level คณิต 1','25%'],['A-Level ฟิสิกส์/วิทย์/ภาษา','20%'],['TGAT','15%']],note:'รูปแบบวิทย์ใช้คณิต 1 + ฟิสิกส์ / รูปแบบศิลป์ใช้คณิต 2 + ภาษาไทย/สังคม'}
   },
   law: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level สังคม','25%'],['A-Level อังกฤษ','20%']],note:'ทุกสายสมัครได้ เน้นทักษะการอ่าน วิเคราะห์ และตีความ'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level สังคม','25%'],['A-Level อังกฤษ','20%']],note:'บางมหาวิทยาลัยมีสอบข้อเขียนเพิ่มเติม เช่น ม.ธรรมศาสตร์'}
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level สังคม','25%'],['A-Level อังกฤษ','20%']],note:'นิติศาสตร์ โควตาบางมหาวิทยาลัยมีจัดสอบวิชาเฉพาะความรู้เบื้องต้นทางกฎหมาย'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','30%'],['A-Level ภาษาไทย','25%'],['A-Level สังคม','25%'],['A-Level อังกฤษ/คณิต 2/ภาษาต่างประเทศ','20%']],note:'ผู้เข้าสอบสามารถเลือกยื่นคะแนนภาษาที่ 3 (เช่น จีน ญี่ปุ่น ฝรั่งเศส) ได้'}
   },
   edu: {
-    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครู)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT5','40%'],['A-Level ภาษาไทย','20%'],['A-Level อังกฤษ','20%']],note:'TPAT5 วัดความถนัดทางวิชาชีพครู รวมทัศนคติและจิตวิทยาการศึกษา'},
-    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครุศาสตร์)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level อังกฤษ',type:'alevel'}],criteria:[['TGAT','20%'],['TPAT5','40%'],['A-Level ภาษาไทย','20%'],['A-Level อังกฤษ','20%']],note:'TPAT5 ทดสอบความถนัดทางวิชาชีพครู และมีสัมภาษณ์กลุ่ม'}
+    quota: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครุศาสตร์)',type:'tpat'},{name:'A-Level ภาษาไทย',type:'alevel'},{name:'A-Level สังคม',type:'alevel'}],criteria:[['TPAT5','40%'],['TGAT','20%'],['A-Level ตามวิชาเอก','40%']],note:'ครุศาสตร์ / ศึกษาศาสตร์ มีการตรวจบุคลิกภาพและการสัมภาษณ์เข้มข้น'},
+    admission: {tracks:['วิทย์-คณิต','ศิลป์-คำนวณ','ศิลป์-ภาษา','ศิลป์-สังคม'],exams:[{name:'TGAT',type:'tgat'},{name:'TPAT5 (ครุศาสตร์)',type:'tpat'},{name:'A-Level ตามวิชาเอก',type:'alevel'}],criteria:[['TPAT5','40%'],['A-Level ตามวิชาเอก','40%'],['TGAT','20%']],note:'วิชา A-Level ที่ใช้ขึ้นอยู่กับสาขาวิชาเอก (เช่น เอกคณิตใช้ คณิต 1, เอกอิ้งใช้อังกฤษ)'}
   }
 };
 
@@ -1669,3 +1819,90 @@ async function submitFeedback() {
   }
 }
 
+
+// ==========================================
+// TCAS INFO PAGE LOGIC
+// ==========================================
+function initTcasInfo() {
+  const sel = document.getElementById('tcas-faculty-select');
+  if (sel && sel.options.length <= 1) {
+    sel.innerHTML = '<option value="all">ทุกคณะ</option>';
+    FACULTIES.forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.id;
+      o.textContent = f.name;
+      sel.appendChild(o);
+    });
+  }
+  renderTcasInfo();
+}
+
+function switchTcasTab(tabId, btn) {
+  currentTcasTab = tabId;
+  document.querySelectorAll('.tcas-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTcasInfo();
+}
+
+function renderTcasInfo() {
+  const container = document.getElementById('tcas-info-content');
+  if (!container) return;
+  const sel = document.getElementById('tcas-faculty-select');
+  const filterId = sel ? sel.value : 'all';
+  
+  let html = '';
+  
+  // Find which faculties to render
+  let renderList = [];
+  if (filterId === 'all') {
+    renderList = Object.keys(TCAS_DATA).map(id => ({ id, data: TCAS_DATA[id][currentTcasTab] }));
+  } else {
+    if (TCAS_DATA[filterId] && TCAS_DATA[filterId][currentTcasTab]) {
+      renderList = [{ id: filterId, data: TCAS_DATA[filterId][currentTcasTab] }];
+    }
+  }
+
+  if (renderList.length === 0) {
+    container.innerHTML = '<div class="tcas-empty-state">ไม่พบข้อมูลเกณฑ์รับสมัครของคณะที่เลือกในรอบนี้</div>';
+    return;
+  }
+
+  renderList.forEach(item => {
+    const fName = FACULTIES.find(f => f.id === item.id)?.name || item.id;
+    const d = item.data;
+    if (!d) return;
+
+    const tracksHtml = d.tracks.map(t => `<span class="track-chip allowed">${t}</span>`).join('');
+    const examsHtml = d.exams.map(e => `<span class="exam-tag ${e.type}">${e.name}</span>`).join('');
+    const criteriaHtml = d.criteria.map(c => `<tr><td>${c[0]}</td><td><strong>${c[1]}</strong></td></tr>`).join('');
+
+    html += `
+      <div class="tcas-faculty-card">
+        <h3>${fName}</h3>
+        <div class="tcas-faculty-sub">${currentTcasTab === 'quota' ? '📌 รอบ 2 โควตา' : '📝 รอบ 3 Admission'}</div>
+        
+        <div class="tcas-section">
+          <h4>🎓 แผนการเรียนที่สมัครได้</h4>
+          <div class="tcas-track-list">${tracksHtml}</div>
+        </div>
+
+        <div class="tcas-section">
+          <h4>📚 วิชาที่ใช้สอบ</h4>
+          <div class="tcas-exam-tags">${examsHtml}</div>
+        </div>
+
+        <div class="tcas-section">
+          <h4>📊 สัดส่วนคะแนน</h4>
+          <table class="tcas-criteria-table">
+            <thead><tr><th>วิชา/เกณฑ์</th><th>น้ำหนัก</th></tr></thead>
+            <tbody>${criteriaHtml}</tbody>
+          </table>
+        </div>
+
+        <div class="tcas-note">💡 <strong>ข้อควรรู้:</strong> ${d.note}</div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
